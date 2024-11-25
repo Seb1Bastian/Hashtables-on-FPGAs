@@ -8,16 +8,22 @@ module hash_table #(parameter KEY_WIDTH = 2,
     input   logic [KEY_WIDTH-1:0] key_in,
     input   logic [DATA_WIDTH-1:0] data_in,
     input   logic [1:0] delete_write_read_i,
+    input   logic ready_i,
+    input   logic valid_i,
+    output  wire ready_o,
+    output  wire valid_o,
     output  wire [DATA_WIDTH-1:0] read_data_o,
     output  wire no_deletion_target_o,
     output  wire no_write_space_o,
-    output  wire no_element_found_o
+    output  wire no_element_found_o,
+    output  wire key_already_present_o
 );
 localparam HASH_TABLE_MAX_SIZE = HASH_TABLE_SIZE[0];
 
 wire [KEY_WIDTH-1:0] key_in_delayed;
 wire [DATA_WIDTH-1:0] data_in_delayed;
-wire [1:0]delete_write_read_i_delayed;
+wire [1:0] delete_write_read_i_valid;
+wire [1:0] delete_write_read_i_delayed;
 
 wire [HASH_TABLE_MAX_SIZE-1:0]  hash_adrs_out [NUMBER_OF_TABLES-1:0];
 wire [HASH_TABLE_MAX_SIZE-1:0]  hash_adrs_out_delayed [NUMBER_OF_TABLES-1:0];
@@ -67,7 +73,7 @@ generate
             .clk(clk),
             .ena(1'b1),     //needs to be changed
             .enb(1'b1),     //needs to be changed
-            .wea(write_en[i]),
+            .wea((write_en[i] && ready_i)),
             .addra(hash_adr[i][HASH_TABLE_SIZE[i]-1:0]),
             .addrb(hash_adrs_out[i][HASH_TABLE_SIZE[i]-1:0]),
             .dia(keys_data[i]),
@@ -87,7 +93,7 @@ generate
             //hashtable 0 is the first table. No elements swaped into this table so it does not need to check whether it can swap
             .read_adr_1(2'd0),
             .write_adr(hash_adr[0]),
-            .write_en(write_en[0]),
+            .write_en((write_en[0] && ready_i)),
             .write_is_valid(write_valid_flag[0]),
             .flag_out_0(flags_0[0])
         );
@@ -101,7 +107,7 @@ generate
             .read_adr_0(data_out_of_block_ram[i][KEY_WIDTH+DATA_WIDTH-1:DATA_WIDTH]),
             .read_adr_1(hash_adr_1[i]),
             .write_adr(hash_adr[i]),
-            .write_en(write_en[i]),
+            .write_en((write_en[i] && ready_i)),
             .write_is_valid(write_valid_flag[i]),
             .flag_out_0(flags_0[i]),
             .flag_out_1(flags_1[i])
@@ -146,7 +152,8 @@ controller #(
     .read_data_o(read_data_o),
     .no_deletion_target_o(no_deletion_target_o),
     .no_write_space_o(no_write_space_o),
-    .no_element_found_o(no_element_found_o)
+    .no_element_found_o(no_element_found_o),
+    .key_already_present_o(key_already_present_o)
 );
 
 
@@ -159,7 +166,7 @@ siso_register #(
 data_delay(
     .clk(clk),
     .reset(reset),
-    .write_en(1'b1),
+    .write_en(ready_i),
     .data_i(data_in),
     .data_o(data_in_delayed));
 
@@ -169,7 +176,7 @@ siso_register #(
 key_delay(
     .clk(clk),
     .reset(reset),
-    .write_en(1'b1),
+    .write_en(ready_i),
     .data_i(key_in),
     .data_o(key_in_delayed));
 
@@ -179,8 +186,8 @@ siso_register #(
 op_delay(
     .clk(clk),
     .reset(reset),
-    .write_en(1'b1),
-    .data_i(delete_write_read_i),
+    .write_en(ready_i),
+    .data_i(delete_write_read_i_valid),
     .data_o(delete_write_read_i_delayed));
 
 siso_register #(
@@ -189,7 +196,7 @@ siso_register #(
 stored_data_delay(
     .clk(clk),
     .reset(reset),
-    .write_en(1'b1),
+    .write_en(ready_i),
     .data_i(data_out_of_block_ram_packed),
     .data_o(data_out_of_block_ram_packed_delayed));
 
@@ -203,7 +210,7 @@ siso_register #(
 hash_adr_delay(
     .clk(clk),
     .reset(reset),
-    .write_en(1'b1),
+    .write_en(ready_i),
     .data_i(hash_adrs_out_packed),
     .data_o(hash_adrs_out_packed_delayed));
 
@@ -217,12 +224,16 @@ siso_register #(
 flag_delay(
     .clk(clk),
     .reset(reset),
-    .write_en(1'b1),
+    .write_en(ready_i),
     .data_i(flags_0_packed),
     .data_o(flags_0_packed_delayed));
 
 assign flags_0_packed = { << {flags_0}};
 assign flags_0_delayed = { << { flags_0_packed_delayed}};
+assign ready_o = ready_i;
+
+
+assign delete_write_read_i_valid = valid_i === 1'b1 ? delete_write_read_i : 2'b00; //nothing operation
 
 
 endmodule

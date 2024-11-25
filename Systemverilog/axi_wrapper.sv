@@ -5,52 +5,35 @@ module axi_wrapper #(parameter KEY_WIDTH = 2,
                     parameter logic [KEY_WIDTH-1:0] Q_MATRIX[NUMBER_OF_TABLES-1:0][HASH_TABLE_SIZE[0]-1:0]  = '{'{2'b01, 2'b01},'{2'b01, 2'b01},'{2'b01, 2'b01}})(
     input   logic clk,
     input   logic reset,
-    
-    //write adr channel
-    input   logic AWVALID,
-    input   logic [1:0] AWADDR,
-    input   logic [1:0] AWPROT,
-    output  wire AWREADY,
-
-    //write data channel
-    input   logic WVALID,
-    input   logic [1:0] WDATA,
-    input   logic [1:0] WSTRB,
-    output  wire WREADY,
-
-    //write response channel
-    input   logic BVALID,
-    input   logic [1:0] BRESP,
-    output  wire BREADY,
-
-    //read adr channel
-    input   logic ARVALID,
-    input   logic [1:0] ARADDR,
-    input   logic [1:0] ARPROT,
-    output  wire ARREADY,
-
-    //read data channel
-    input   logic RREADY,
-    output  wire RVALID,
-    output  wire RDATA,
-    output  wire RRESP
-
+    input   logic [2+DATA_WIDTH + KEY_WIDTH-1:0] data_in,
+    input   logic ready_i,
+    input   logic valid_i,
+    output  wire ready_o,
+    output  wire valid_o,
+    output  wire [2+DATA_WIDTH + KEY_WIDTH-1:0] data_o,
 
 );
 
-
-
-//write data channel fifo
-fifo 
-#(.DATA_WIDTH(KEY_WIDTH),
-  .DEPTH(2)
-)
-wdf(
+the_table(
+    .KEY_WIDTH(KEY_WIDTH),
+    .DATA_WIDTH(DATA_WIDTH),
+    .NUMBER_OF_TABLES(NUMBER_OF_TABLES),
+    .HASH_TABLE_SIZE(HASH_TABLE_SIZE),
+    .Q_MATRIX(Q_MATRIX)
+)hash_table(
     .clk(clk),
     .reset(reset),
-    
-    
+    .key_i(data_i[DATA_WIDTH+KEY_WIDTH-1:DATA_WIDTH])
+    .data_i(data_i[DATA_WIDTH-1:0])
+    .delete_write_read_i(data_i[DATA_WIDTH+KEY_WIDTH+2:DATA_WIDTH+KEY_WIDTH])
+    .ready_i(ready_i),
+    .valid_i(valid_i),
+    .ready_o(ready_o),
+    .valid_o(valid_o),
+    .read_data_o(data_o[DATA_WIDTH-1:0])
+    .no_deletion_target_o(data_o[DATA_WIDTH]),
+    .no_write_space_o(data_o[DATA_WIDTH+1]),
+    .no_element_found_o(data_o[DATA_WIDTH+2]),
+    .key_already_present_o(data_o[DATA_WIDTH+3])
 );
-
-
 endmodule
