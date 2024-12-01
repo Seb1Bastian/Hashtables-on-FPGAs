@@ -1,5 +1,5 @@
 #include "hash_function.h"
-
+#include <stdio.h>
 extern int HASH_TABLE_SIZE[];
 
 int compute_hash(int key, int function_id){
@@ -27,4 +27,22 @@ int compute_hash(int key, int function_id){
     }else {
         return -1;
     }
+}
+
+
+int h3_hash_function(int key, int *matrix_row, int key_length, int hash_length){
+    int helper[hash_length];
+    int result = 0;
+    for (int i =0; i<hash_length; i++) {
+        helper[i] = key & matrix_row[i];
+        //printf("helper:%d, %d\n",i,helper[i]);
+    }
+    for (int i=hash_length-1; i>0; i-- ) {
+        result += __builtin_parity(helper[i]);
+        result = result << 1;
+        //printf("result:%d, %d\n",i,result);
+    }
+    result += __builtin_parity(helper[0]);
+    //printf("result:%d, %d\n",0,result);
+    return result;
 }

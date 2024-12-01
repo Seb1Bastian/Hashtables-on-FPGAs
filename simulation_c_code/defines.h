@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #define NUMBER_OF_HASH_TABLES 3
 #define BUCKET_SIZE 1
-#define NUMBER_OF_WRITE_OPERATIONS 1000
 #define UNIQUE_KEYS                     //should allways be defined except for debugging porpuses
 
 
