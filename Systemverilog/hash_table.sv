@@ -95,7 +95,8 @@ generate
             .write_adr(hash_adr[0]),
             .write_en((write_en[0] && ready_i)),
             .write_is_valid(write_valid_flag[0]),
-            .flag_out_0(flags_0[0])
+            .flag_out_0(flags_0[0]),
+            .flag_out_1()
         );
     for (i = 1; i < NUMBER_OF_TABLES; i = i + 1) begin
         flag_register 
@@ -150,6 +151,7 @@ controller #(
     .keys_data_o(keys_data),
     .hash_adr_o(hash_adr),
     .read_data_o(read_data_o),
+    .valid_o(valid_o),
     .no_deletion_target_o(no_deletion_target_o),
     .no_write_space_o(no_write_space_o),
     .no_element_found_o(no_element_found_o),

@@ -18,9 +18,9 @@ initial begin
 end
 
 always @(posedge clk ) begin
-    if (reset === 1) begin
+    if (reset == 1) begin
         shift_registers <= '{default: '0};
-    end else if (write_en === 1) begin
+    end else if (write_en == 1) begin
         for (int i = DELAY-1; i > 0 ; i--) begin
             shift_registers[i] = shift_registers[i-1];
         end
