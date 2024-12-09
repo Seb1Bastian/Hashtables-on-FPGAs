@@ -18,6 +18,8 @@ logic valid_flags [(2**SIZE)-1:0];
 
 initial begin
     valid_flags <= '{default: 1'b0};
+    flag_out_0 <= 1'b0;
+    flag_out_1 <= 1'b0;
 end
 
 always @(posedge clk) begin
@@ -32,8 +34,8 @@ always @(posedge clk) begin
         flag_out_0 <= 1'b0;
         flag_out_1 <= 1'b0;
     end else begin
-        flag_out_0 = valid_flags[read_adr_0];
-        flag_out_1 = valid_flags[read_adr_1];
+        flag_out_0 <= valid_flags[read_adr_0];
+        flag_out_1 <= valid_flags[read_adr_1];
     end
 end
    

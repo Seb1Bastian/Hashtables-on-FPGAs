@@ -1,8 +1,8 @@
 module hash_table #(parameter KEY_WIDTH = 2,
                     parameter DATA_WIDTH = 32,
                     parameter NUMBER_OF_TABLES = 3,
-                    parameter integer HASH_TABLE_SIZE [NUMBER_OF_TABLES-1:0]   = '{2,2,2},
-                    parameter logic [KEY_WIDTH-1:0] Q_MATRIX[NUMBER_OF_TABLES-1:0][HASH_TABLE_SIZE[0]-1:0]  = '{'{2'b01, 2'b01},'{2'b01, 2'b01},'{2'b01, 2'b01}})(
+                    parameter [32*NUMBER_OF_TABLES-1:0] SIZES = 96'h000000020000000200000002,
+                    parameter [KEY_WIDTH*NUMBER_OF_TABLES*2-1:0] MATRIX = 12'h0)(
     input   logic clk,
     input   logic reset,
     input   logic [KEY_WIDTH-1:0] key_in,
@@ -18,6 +18,8 @@ module hash_table #(parameter KEY_WIDTH = 2,
     output  wire no_element_found_o,
     output  wire key_already_present_o
 );
+localparam integer HASH_TABLE_SIZE[NUMBER_OF_TABLES-1:0] = '{SIZES[95:64],SIZES[63:32],SIZES[31:0]};
+localparam [KEY_WIDTH-1:0] Q_MATRIX[NUMBER_OF_TABLES-1:0][HASH_TABLE_SIZE[0]-1:0] = '{'{2'b01,2'b01},'{2'b01,2'b01},'{2'b01,2'b01}};
 localparam HASH_TABLE_MAX_SIZE = HASH_TABLE_SIZE[0];
 
 wire [KEY_WIDTH-1:0] key_in_delayed;
@@ -84,12 +86,12 @@ endgenerate
 
 generate
     flag_register 
-            #(.SIZE(HASH_TABLE_SIZE[i])
+            #(.SIZE(HASH_TABLE_SIZE[0])
         )
         flags_reg_0(
             .clk(clk),
             .reset(reset),
-            .read_adr_0(data_out_of_block_ram[i][KEY_WIDTH+DATA_WIDTH-1:DATA_WIDTH]),
+            .read_adr_0(data_out_of_block_ram[0][KEY_WIDTH+DATA_WIDTH-1:DATA_WIDTH]),
             //hashtable 0 is the first table. No elements swaped into this table so it does not need to check whether it can swap
             .read_adr_1(2'd0),
             .write_adr(hash_adr[0]),
