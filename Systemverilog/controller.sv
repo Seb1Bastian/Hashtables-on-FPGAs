@@ -34,6 +34,7 @@ wire [NUMBER_OF_TABLES-1:0] delete;
 wire [NUMBER_OF_TABLES-1:0] write;
 wire [NUMBER_OF_TABLES-1:0] write_og;
 wire [NUMBER_OF_TABLES-1:0] write_shift;
+wire unary_or_same_key;
 
 
 genvar i;
@@ -42,6 +43,7 @@ generate
         assign same_key[i] = (key_i == read_out_keys_data_i[i][KEY_WIDTH+DATA_WIDTH-1:DATA_WIDTH] && valid_flags_0_i[i]) ? 1'b1 : 1'b0;
     end
 endgenerate
+assign unary_same_key = |same_key;
 
 generate
     for (i = 0; i < NUMBER_OF_TABLES ; i++ ) begin
@@ -57,7 +59,7 @@ generate
         end else begin
             assign write_shift[i] = ((valid_flags_0_i[i-1] && write_og[i-1]));
         end
-        assign write[i] = (write_og[i] || write_shift[i]) && delete_write_read_i == WRITE_OPERATION && (~|same_key);
+        assign write[i] = (write_og[i] || write_shift[i]) && delete_write_read_i == WRITE_OPERATION && (!unary_or_same_key);
         assign delete[i] = (same_key[i] && delete_write_read_i == DELTE_OPERATION) ? 1'b1 : 1'b0;
         assign write_en_o[i] = (write[i] || delete[i]) ? 1'b1 : 1'b0;
         assign write_valid_flag_o[i] = write[i];
@@ -85,13 +87,13 @@ raw_mulitplexer #(
     .data_out(read_key_data)
 );
 
-assign read_data_o = read_key_data[DATA_WIDTH-1:0];
-assign no_deletion_target_o = ((~|same_key) && delete_write_read_i == DELTE_OPERATION) ? 1'b1 : 1'b0;
+assign read_data_o = {unary_or_same_key, read_key_data[DATA_WIDTH-2:0]};
+assign no_deletion_target_o = ((!unary_same_key) && delete_write_read_i == DELTE_OPERATION) ? 1'b1 : 1'b0;
 assign no_write_space_o = ((~|write) && delete_write_read_i == WRITE_OPERATION) ? 1'b1 : 1'b0;
-assign no_element_found_o = ((~|same_key) && delete_write_read_i == READ_OPERATION) ? 1'b1 : 1'b0;
-assign key_already_present_o = ((|same_key) && delete_write_read_i == WRITE_OPERATION) ? 1'b1 : 1'b0;
+assign no_element_found_o = ((!unary_or_same_key) && delete_write_read_i == READ_OPERATION) ? 1'b1 : 1'b0;
+assign key_already_present_o = ((unary_or_same_key) && delete_write_read_i == WRITE_OPERATION) ? 1'b1 : 1'b0;
 assign read_success_o = (delete_write_read_i == READ_OPERATION && (~no_element_found_o)) ? 1'b1 : 1'b0;
-assign write_success_o = (delete_write_read_i == WRITE_OPERATION && (~key_already_present_o) && ~(no_write_space_o)) ? 1'b1 : 1'b0;
+assign write_success_o = (delete_write_read_i == WRITE_OPERATION && (~key_already_present_o) || ~(no_write_space_o)) ? 1'b1 : 1'b0;
 assign delete_success_o = (delete_write_read_i == READ_OPERATION && (~no_deletion_target_o)) ? 1'b1 : 1'b0;
 
 assign valid_o = (delete_write_read_i == NOTHING_OPERATION) ? 1'b0 : 1'b1;
