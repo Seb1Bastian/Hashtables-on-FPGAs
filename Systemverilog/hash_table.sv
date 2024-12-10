@@ -18,8 +18,8 @@ module hash_table #(parameter KEY_WIDTH = 2,
     output  wire no_element_found_o,
     output  wire key_already_present_o
 );
-localparam integer HASH_TABLE_SIZE[NUMBER_OF_TABLES-1:0] = '{SIZES[95:64],SIZES[63:32],SIZES[31:0]};
-localparam [KEY_WIDTH-1:0] Q_MATRIX[NUMBER_OF_TABLES-1:0][HASH_TABLE_SIZE[0]-1:0] = '{'{2'b01,2'b01},'{2'b01,2'b01},'{2'b01,2'b01}};
+localparam integer HASH_TABLE_SIZE[NUMBER_OF_TABLES-1:0] = '{SIZES[63:32],SIZES[31:0]};
+localparam [KEY_WIDTH-1:0] Q_MATRIX[NUMBER_OF_TABLES-1:0][HASH_TABLE_SIZE[0]-1:0] = '{'{2'b10,2'b00},'{2'b00,2'b00}};
 localparam HASH_TABLE_MAX_SIZE = HASH_TABLE_SIZE[0];
 
 wire [KEY_WIDTH-1:0] key_in_delayed;
@@ -45,7 +45,7 @@ wire                                            flags_1 [NUMBER_OF_TABLES-1:1];
 wire write_en [NUMBER_OF_TABLES-1:0];
 wire write_valid_flag [NUMBER_OF_TABLES-1:0];
 wire [KEY_WIDTH+DATA_WIDTH-1:0] keys_data [NUMBER_OF_TABLES-1:0];
-wire [HASH_TABLE_MAX_SIZE-1:0] hash_adr [NUMBER_OF_TABLES-1:0];
+wire [HASH_TABLE_MAX_SIZE-1:0] hash_adr_write [NUMBER_OF_TABLES-1:0];
 wire [DATA_WIDTH-1:0] read_data;
 
 
@@ -76,7 +76,7 @@ generate
             .ena(1'b1),     //needs to be changed
             .enb(1'b1),     //needs to be changed
             .wea((write_en[i] && ready_i)),
-            .addra(hash_adr[i][HASH_TABLE_SIZE[i]-1:0]),
+            .addra(hash_adr_write[i][HASH_TABLE_SIZE[i]-1:0]),
             .addrb(hash_adrs_out[i][HASH_TABLE_SIZE[i]-1:0]),
             .dia(keys_data[i]),
             .dob(data_out_of_block_ram[i])
@@ -91,10 +91,10 @@ generate
         flags_reg_0(
             .clk(clk),
             .reset(reset),
-            .read_adr_0(data_out_of_block_ram[0][KEY_WIDTH+DATA_WIDTH-1:DATA_WIDTH]),
+            .read_adr_0(hash_adrs_out[0][HASH_TABLE_SIZE[0]-1:0]),
             //hashtable 0 is the first table. No elements swaped into this table so it does not need to check whether it can swap
             .read_adr_1(2'd0),
-            .write_adr(hash_adr[0]),
+            .write_adr(hash_adr_write[0]),
             .write_en((write_en[0] && ready_i)),
             .write_is_valid(write_valid_flag[0]),
             .flag_out_0(flags_0[0]),
@@ -107,9 +107,9 @@ generate
         flags_reg(
             .clk(clk),
             .reset(reset),
-            .read_adr_0(data_out_of_block_ram[i][KEY_WIDTH+DATA_WIDTH-1:DATA_WIDTH]),
+            .read_adr_0(hash_adrs_out[i][HASH_TABLE_SIZE[i]-1:0]),
             .read_adr_1(hash_adr_1[i]),
-            .write_adr(hash_adr[i]),
+            .write_adr(hash_adr_write[i]),
             .write_en((write_en[i] && ready_i)),
             .write_is_valid(write_valid_flag[i]),
             .flag_out_0(flags_0[i]),
@@ -151,7 +151,7 @@ controller #(
     .write_en_o(write_en),
     .write_valid_flag_o(write_valid_flag),
     .keys_data_o(keys_data),
-    .hash_adr_o(hash_adr),
+    .hash_adr_o(hash_adr_write),
     .read_data_o(read_data_o),
     .valid_o(valid_o),
     .no_deletion_target_o(no_deletion_target_o),

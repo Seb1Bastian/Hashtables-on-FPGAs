@@ -4,7 +4,7 @@ module fifo #(parameter DATA_WIDTH = 8, parameter DEPTH = 16) (
     input wire wr_en,
     input wire rd_en,
     input wire [DATA_WIDTH-1:0] data_in,
-    output wire [DATA_WIDTH-1:0] data_out,
+    output reg [DATA_WIDTH-1:0] data_out,
     output wire empty,
     output wire full
 );
@@ -41,7 +41,9 @@ always @(posedge clk) begin
     end
 end
 
-assign data_out = mem[rd_ptr];
+always @ (rd_ptr or mem) begin
+   data_out = mem[rd_ptr];
+end
 assign empty = (count == 0);
 assign full = (count == DEPTH);
 
