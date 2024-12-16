@@ -127,7 +127,7 @@ generate
               .Q_MATRIX(Q_MATRIX[i][HASH_TABLE_MAX_SIZE-1:0])
         )
         hash_1(
-            .key_in(data_out_of_block_ram[i][KEY_WIDTH+DATA_WIDTH-1:DATA_WIDTH]),
+            .key_in(data_out_of_block_ram[i-1][KEY_WIDTH+DATA_WIDTH-1:DATA_WIDTH]),
             .hash_adr_out(hash_adr_1[i])
         );
     end
