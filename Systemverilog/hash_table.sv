@@ -145,7 +145,7 @@ controller #(
     .hash_adr_i(hash_adrs_out_delayed), //
     .delete_write_read_i(delete_write_read_i_delayed),
     .read_out_keys_data_i(data_out_of_block_ram_delayed),
-    .read_out_hash_adr_i(hash_adr_1),
+    .read_out_hash_adr_i(hash_adr_1),  //should this not also be delayed????
     .valid_flags_0_i(flags_0_delayed),
     .valid_flags_1_i(flags_1),
     .write_en_o(write_en),
