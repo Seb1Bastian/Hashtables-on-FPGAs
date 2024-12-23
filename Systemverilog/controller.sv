@@ -9,7 +9,7 @@ module controller #(parameter KEY_WIDTH = 2,
     input   logic [HASH_TABLE_MAX_SIZE-1:0] hash_adr_i [NUMBER_OF_TABLES-1:0],
     input   logic [1:0] delete_write_read_i,      // 00 = do nothing | 01 = read | 10 = write | 11 = delete
     input   logic [KEY_WIDTH+DATA_WIDTH-1:0] read_out_keys_data_i [NUMBER_OF_TABLES-1:0],
-    input   logic [HASH_TABLE_MAX_SIZE-1:0] read_out_hash_adr_i [NUMBER_OF_TABLES-2:0],
+    input   logic [HASH_TABLE_MAX_SIZE-1:0] read_out_hash_adr_i [NUMBER_OF_TABLES-2:0], // von i nach i+1
     input   logic valid_flags_0_i [NUMBER_OF_TABLES-1:0],
     input   logic valid_flags_1_i [NUMBER_OF_TABLES-1:1],
     output  wire write_en_o [NUMBER_OF_TABLES-1:0],

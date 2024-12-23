@@ -22,31 +22,39 @@ localparam integer HASH_TABLE_SIZE[NUMBER_OF_TABLES-1:0] = '{SIZES[63:32],SIZES[
 localparam [KEY_WIDTH-1:0] Q_MATRIX[NUMBER_OF_TABLES-1:0][HASH_TABLE_SIZE[0]-1:0] = '{'{2'b10,2'b00},'{2'b00,2'b00}};
 localparam HASH_TABLE_MAX_SIZE = HASH_TABLE_SIZE[0];
 
-wire [KEY_WIDTH-1:0] key_in_delayed;
-wire [DATA_WIDTH-1:0] data_in_delayed;
-wire [1:0] delete_write_read_i_valid;
-wire [1:0] delete_write_read_i_delayed;
+wire [KEY_WIDTH-1:0]    key_in_delayed;
+wire [DATA_WIDTH-1:0]   data_in_delayed;
+wire [1:0]              delete_write_read_i_valid;
+wire [1:0]              delete_write_read_i_delayed;
 
-wire [HASH_TABLE_MAX_SIZE-1:0]  hash_adrs_out [NUMBER_OF_TABLES-1:0];
-wire [HASH_TABLE_MAX_SIZE-1:0]  hash_adrs_out_delayed [NUMBER_OF_TABLES-1:0];
-wire [(HASH_TABLE_MAX_SIZE*NUMBER_OF_TABLES)-1:0]  hash_adrs_out_packed;
-wire [(HASH_TABLE_MAX_SIZE*NUMBER_OF_TABLES)-1:0]  hash_adrs_out_packed_delayed;
-wire [KEY_WIDTH+DATA_WIDTH-1:0]                 data_out_of_block_ram [NUMBER_OF_TABLES-1:0];
-wire [KEY_WIDTH+DATA_WIDTH-1:0]                 data_out_of_block_ram_delayed [NUMBER_OF_TABLES-1:0];
-wire [((KEY_WIDTH+DATA_WIDTH)*NUMBER_OF_TABLES)-1:0]                 data_out_of_block_ram_packed;
-wire [((KEY_WIDTH+DATA_WIDTH)*NUMBER_OF_TABLES)-1:0]                 data_out_of_block_ram_packed_delayed;
-wire [KEY_WIDTH-1:0]                            hash_adr_1 [NUMBER_OF_TABLES-1:1];
-wire                                            flags_0 [NUMBER_OF_TABLES-1:0];
-wire                                            flags_0_delayed [NUMBER_OF_TABLES-1:0];
-wire [NUMBER_OF_TABLES-1:0]                     flags_0_packed;
-wire [NUMBER_OF_TABLES-1:0]                     flags_0_packed_delayed;
-wire                                            flags_1 [NUMBER_OF_TABLES-1:1];
+wire [HASH_TABLE_MAX_SIZE-1:0]                          hash_adrs_out                           [NUMBER_OF_TABLES-1:0];
+wire [HASH_TABLE_MAX_SIZE-1:0]                          hash_adrs_out_delayed                   [NUMBER_OF_TABLES-1:0];
+wire [(HASH_TABLE_MAX_SIZE*NUMBER_OF_TABLES)-1:0]       hash_adrs_out_packed;
+wire [(HASH_TABLE_MAX_SIZE*NUMBER_OF_TABLES)-1:0]       hash_adrs_out_packed_delayed;
+wire [KEY_WIDTH+DATA_WIDTH-1:0]                         data_out_of_block_ram                   [NUMBER_OF_TABLES-1:0];
+wire [KEY_WIDTH+DATA_WIDTH-1:0]                         data_out_of_block_ram_delayed           [NUMBER_OF_TABLES-1:0];
+wire [((KEY_WIDTH+DATA_WIDTH)*NUMBER_OF_TABLES)-1:0]    data_out_of_block_ram_packed;
+wire [((KEY_WIDTH+DATA_WIDTH)*NUMBER_OF_TABLES)-1:0]    data_out_of_block_ram_packed_delayed;
+wire [HASH_TABLE_MAX_SIZE-1:0]                          hash_adr_1                              [NUMBER_OF_TABLES-2:0];
+wire [HASH_TABLE_MAX_SIZE-1:0]                          hash_adr_2                              [NUMBER_OF_TABLES-2:1];
+wire                                                    flags_0                                 [NUMBER_OF_TABLES-1:0];
+wire                                                    flags_0_delayed                         [NUMBER_OF_TABLES-1:0];
+wire [NUMBER_OF_TABLES-1:0]                             flags_0_packed;
+wire [NUMBER_OF_TABLES-1:0]                             flags_0_packed_delayed;
+wire                                                    flags_1                                 [NUMBER_OF_TABLES-1:1];
+wire                                                    flags_2                                 [NUMBER_OF_TABLES-1:2];
 
-wire write_en [NUMBER_OF_TABLES-1:0];
-wire write_valid_flag [NUMBER_OF_TABLES-1:0];
-wire [KEY_WIDTH+DATA_WIDTH-1:0] keys_data [NUMBER_OF_TABLES-1:0];
-wire [HASH_TABLE_MAX_SIZE-1:0] hash_adr_write [NUMBER_OF_TABLES-1:0];
-wire [DATA_WIDTH-1:0] read_data;
+wire                            write_en            [NUMBER_OF_TABLES-1:0];
+wire                            write_valid_flag    [NUMBER_OF_TABLES-1:0];
+wire [KEY_WIDTH+DATA_WIDTH-1:0] keys_data           [NUMBER_OF_TABLES-1:0];
+wire [HASH_TABLE_MAX_SIZE-1:0]  hash_adr_write      [NUMBER_OF_TABLES-1:0];
+wire [DATA_WIDTH-1:0]           read_data;
+
+wire [KEY_WIDTH-1:0]        correct_key         [NUMBER_OF_TABLES-1:0];
+wire [DATA_WIDTH-1:0]       correct_data        [NUMBER_OF_TABLES-1:0];
+wire                        correct_is_valid_o  [NUMBER_OF_TABLES-1:0];
+wire [HASH_ADR_WIDTH-1:0]   correct_shift_adr   [NUMBER_OF_TABLES-2:0];
+wire                        correct_shift_valid [NUMBER_OF_TABLES-2:0];
 
 
 genvar i;
@@ -85,53 +93,135 @@ generate
 endgenerate
 
 generate
-    flag_register 
-            #(.SIZE(HASH_TABLE_SIZE[0])
-        )
-        flags_reg_0(
-            .clk(clk),
-            .reset(reset),
-            .read_adr_0(hash_adrs_out[0][HASH_TABLE_SIZE[0]-1:0]),
-            //hashtable 0 is the first table. No elements swaped into this table so it does not need to check whether it can swap
-            .read_adr_1(2'd0),
-            .write_adr(hash_adr_write[0]),
-            .write_en((write_en[0] && ready_i)),
-            .write_is_valid(write_valid_flag[0]),
-            .flag_out_0(flags_0[0]),
-            .flag_out_1()
-        );
-    for (i = 1; i < NUMBER_OF_TABLES; i = i + 1) begin
-        flag_register 
-            #(.SIZE(HASH_TABLE_SIZE[i])
-        )
-        flags_reg(
-            .clk(clk),
-            .reset(reset),
-            .read_adr_0(hash_adrs_out[i][HASH_TABLE_SIZE[i]-1:0]),
-            .read_adr_1(hash_adr_1[i]),
-            .write_adr(hash_adr_write[i]),
-            .write_en((write_en[i] && ready_i)),
-            .write_is_valid(write_valid_flag[i]),
-            .flag_out_0(flags_0[i]),
-            .flag_out_1(flags_1[i])
-        );
+    for (i = 0; i < NUMBER_OF_TABLES; i = i + 1) begin
+        if (i == 0) begin
+            flag_register 
+                #(.SIZE(HASH_TABLE_SIZE[i])
+            )
+            flags_reg_0(
+                .clk(clk),
+                .reset(reset),
+                .read_adr_0(hash_adrs_out[i][HASH_TABLE_SIZE[i]-1:0]),
+                .read_adr_1(0),
+                .read_adr_2(0),
+                .write_adr(hash_adr_write[i]),
+                .write_en((write_en[i] && ready_i)),
+                .write_is_valid(write_valid_flag[i]),
+                .flag_out_0(flags_0[i]),
+                .flag_out_1(),
+                .flag_out_2()
+            );
+        end else if (i == 1) begin
+            flag_register 
+                #(.SIZE(HASH_TABLE_SIZE[i])
+            )
+            flags_reg_1(
+                .clk(clk),
+                .reset(reset),
+                .read_adr_0(hash_adrs_out[i][HASH_TABLE_SIZE[i]-1:0]),
+                .read_adr_1(hash_adr_1[i][HASH_TABLE_SIZE[i]-1:0]),
+                .read_adr_2(0),
+                .write_adr(hash_adr_write[i]),
+                .write_en((write_en[i] && ready_i)),
+                .write_is_valid(write_valid_flag[i]),
+                .flag_out_0(flags_0[i]),
+                .flag_out_1(flags_1[i]),
+                .flag_out_2()
+            );
+        end else begin
+            flag_register 
+                #(.SIZE(HASH_TABLE_SIZE[i])
+            )
+            flags_reg__(
+                .clk(clk),
+                .reset(reset),
+                .read_adr_0(hash_adrs_out[i][HASH_TABLE_SIZE[i]-1:0]),
+                .read_adr_1(hash_adr_1[i][HASH_TABLE_SIZE[i]-1:0]),
+                .read_adr_2(hash_adr_2[i][HASH_TABLE_SIZE[i]-1:0]),
+                .write_adr(hash_adr_write[i]),
+                .write_en((write_en[i] && ready_i)),
+                .write_is_valid(write_valid_flag[i]),
+                .flag_out_0(flags_0[i]),
+                .flag_out_1(flags_1[i]),
+                .flag_out_2(flags_2[i])
+            );
+        end
     end
 endgenerate
 
 
 generate
-    for (i = 1; i < NUMBER_OF_TABLES; i = i + 1) begin
+    for (i = 0; i < NUMBER_OF_TABLES-1; i = i + 1) begin
         h3_hash_function 
             #(.KEY_WIDTH(KEY_WIDTH),
               .HASH_ADR_WIDTH(HASH_TABLE_SIZE[i]),
               .Q_MATRIX(Q_MATRIX[i][HASH_TABLE_MAX_SIZE-1:0])
         )
         hash_1(
-            .key_in(data_out_of_block_ram[i-1][KEY_WIDTH+DATA_WIDTH-1:DATA_WIDTH]),
+            .key_in(data_out_of_block_ram[i][KEY_WIDTH+DATA_WIDTH-1:DATA_WIDTH]),
             .hash_adr_out(hash_adr_1[i])
         );
     end
 endgenerate
+
+generate
+    for (i = 1; i < NUMBER_OF_TABLES-1; i = i + 1) begin
+        h3_hash_function 
+            #(.KEY_WIDTH(KEY_WIDTH),
+              .HASH_ADR_WIDTH(HASH_TABLE_SIZE[i]),
+              .Q_MATRIX(Q_MATRIX[i][HASH_TABLE_MAX_SIZE-1:0])
+        )
+        hash_2(
+            .key_in(data_out_of_block_ram[i-1][KEY_WIDTH+DATA_WIDTH-1:DATA_WIDTH]),
+            .hash_adr_out(hash_adr_2[i])
+        );
+    end
+endgenerate
+
+
+generate
+    for (i = 0; i < NUMBER_OF_TABLES-1 ; i = i+1 ) begin
+        assign forward_shift_hash_adr[i] = (write_shift[i] == 1'b1) ? hash_adr_2[i] : hash_adr_1[i];
+        assign forward_shift_valid[i] = (write_shift[i] == 1'b1) ? flag_out_2[i] : flag_out_1[i];
+    end
+endgenerate
+whole_forward_updater #(
+    .DATA_WIDTH(DATA_WIDTH),
+    .KEY_WIDTH(KEY_WIDTH),
+    .NUMBER_OF_TABLES(NUMBER_OF_TABLES),
+    .FORWARDED_CLOCK_CYCLES(2),
+    .MAX_HASH_ADR_WIDTH(HASH_TABLE_MAX_SIZE),
+    .HASH_TABLE_ADR_WIDTH(HASH_TABLE_SIZE),
+) forward_updater (
+    .clk(clk),
+    .reset(reset),
+    .clk_en(clk_en),
+    .new_hash_adr_i(hash_adrs_out_delayed),
+    .new_data_i(data_out_of_block_ram_delayed[DATA_WIDTH-1:0]),
+    .new_key_i(data_out_of_block_ram_delayed[KEY_WIDTH+DATA_WIDTH-1:DATA_WIDTH]),
+    .new_valid_i(flags_0_delayed),
+    .new_shift_adr_i(hash_adr_1_delayed),
+    .new_shift_valid_i(flag_out_2),
+
+    .forward_hash_adr_i(hash_adr_write),
+    .forward_data_i(keys_data[DATA_WIDTH-1:0]),
+    .forward_key_i(keys_data[KEY_WIDTH+DATA_WIDTH-1:DATA_WIDTH]),
+    .forward_updated_mem_i(write_en),
+    .forward_valid_i(write_valid_flag),
+    .forward_shift_hash_adr_i(forward_shift_hash_adr),
+    .forward_shift_valid_i(forward_shift_valid),
+//    input .[SHIFT_HASH_ADR_WIDTH-1:0] forward_next_mem_hash_adr_i [NUMBER_OF_TABLES-2:0],
+//    input .forward_next_mem_updated_i [NUMBER_OF_TABLES-2:0],
+//    input .forward_next_mem_valid_i [NUMBER_OF_TABLES-2:0],
+
+    .correct_key_o(correct_key),
+    .correct_data_o(correct_data),
+    .correct_is_valid_o(correct_is_valid),
+    .shift_adr_corrected_o(correct_shift_adr),
+    .shift_valid_corrected_o(correct_shift_valid)
+);
+
+
 
 controller #(
     .KEY_WIDTH(KEY_WIDTH),
@@ -144,10 +234,10 @@ controller #(
     .key_i(key_in_delayed),
     .hash_adr_i(hash_adrs_out_delayed), //
     .delete_write_read_i(delete_write_read_i_delayed),
-    .read_out_keys_data_i(data_out_of_block_ram_delayed),
-    .read_out_hash_adr_i(hash_adr_1),  //should this not also be delayed????
-    .valid_flags_0_i(flags_0_delayed),
-    .valid_flags_1_i(flags_1),
+    .read_out_keys_data_i({correct_key, correct_data}), // wahrscheinlich falsche syntax 2d und so
+    .read_out_hash_adr_i(correct_shift_adr),
+    .valid_flags_0_i(correct_is_valid),
+    .valid_flags_1_i(correct_shift_valid),
     .write_en_o(write_en),
     .write_valid_flag_o(write_valid_flag),
     .keys_data_o(keys_data),
@@ -210,16 +300,39 @@ assign data_out_of_block_ram_delayed = { << {data_out_of_block_ram_packed_delaye
 
 siso_register #(
     .DATA_WIDTH(HASH_TABLE_MAX_SIZE*NUMBER_OF_TABLES),
-    .DELAY(1))
-hash_adr_delay(
+    .DELAY(2))                                                  // war vorher 1
+hash_adr_delay_0(
     .clk(clk),
     .reset(reset),
     .write_en(ready_i),
     .data_i(hash_adrs_out_packed),
     .data_o(hash_adrs_out_packed_delayed));
-
 assign hash_adrs_out_packed = { << { hash_adrs_out}};
 assign hash_adrs_out_delayed = { << { hash_adrs_out_packed_delayed}};
+
+siso_register #(
+    .DATA_WIDTH(HASH_TABLE_MAX_SIZE*(NUMBER_OF_TABLES-1)),
+    .DELAY(1))
+hash_adr_delay_2(
+    .clk(clk),
+    .reset(reset),
+    .write_en(ready_i),
+    .data_i(hash_adr_1_packed),
+    .data_o(hash_adr_1_packed_delayed));
+assign hash_adr_1_packed = { << { hash_adr_1}};
+assign hash_adr_1_delayed = { << { hash_adr_1_packed_delayed}};
+
+siso_register #(
+    .DATA_WIDTH(HASH_TABLE_MAX_SIZE*(NUMBER_OF_TABLES-2)),
+    .DELAY(1))
+hash_adr_delay_2(
+    .clk(clk),
+    .reset(reset),
+    .write_en(ready_i),
+    .data_i(hash_adr_2_packed),
+    .data_o(hash_adr_2_packed_delayed));
+assign hash_adr_2_packed = { << { hash_adr_2}};
+assign hash_adr_2_delayed = { << { hash_adr_2_packed_delayed}};
 
 
 siso_register #(
