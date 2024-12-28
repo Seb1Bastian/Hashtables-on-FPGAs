@@ -13,7 +13,7 @@ module whole_forward_updater #(
     input logic [DATA_WIDTH-1:0] new_data_i [NUMBER_OF_TABLES-1:0],
     input logic [KEY_WIDTH-1:0] new_key_i [NUMBER_OF_TABLES-1:0],
     input logic new_valid_i [NUMBER_OF_TABLES-1:0],
-    input logic [MAX_HASH_ADR_WIDTH-1:0]new_shift_adr_i [NUMBER_OF_TABLES-1:0],
+    input logic [MAX_HASH_ADR_WIDTH-1:0]new_shift_adr_i [NUMBER_OF_TABLES-2:0],
     input logic new_shift_valid_i [NUMBER_OF_TABLES-2:0],                           //von i nach i+1
 
     input logic [MAX_HASH_ADR_WIDTH-1:0] forward_hash_adr_i [NUMBER_OF_TABLES-1:0],
@@ -34,6 +34,7 @@ module whole_forward_updater #(
     output wire shift_valid_corrected_o [NUMBER_OF_TABLES-2:0]
 );
 
+localparam FCC = FORWARDED_CLOCK_CYCLES-1;  //for the generation loop
 
 logic [MAX_HASH_ADR_WIDTH-1:0] forward_hash_adr [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
 logic [DATA_WIDTH-1:0] forward_data [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
@@ -42,16 +43,16 @@ logic forward_updated_mem [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
 logic forward_valid [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
 logic [MAX_HASH_ADR_WIDTH-1:0] forward_shift_hash_adr [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
 logic forward_shift_valid [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
-logic [MAX_HASH_ADR_WIDTH-1:0] forward_next_mem_hash_adr [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
-logic forward_next_mem_updated [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
-logic forward_next_mem_valid [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
+//logic [MAX_HASH_ADR_WIDTH-1:0] forward_next_mem_hash_adr [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
+//logic forward_next_mem_updated [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
+//logic forward_next_mem_valid [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
 
 
-wire inbetween_valid_corrected [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
-wire inbetween_key_corrected [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
-wire inbetween_data_corrected [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
-wire inbetween_shift_hash_adr_corrected [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
-wire inbetween_shift_valid_corrected [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
+wire                            inbetween_valid_corrected           [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
+wire [KEY_WIDTH-1:0]            inbetween_key_corrected             [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
+wire [DATA_WIDTH-1:0]           inbetween_data_corrected            [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
+wire [MAX_HASH_ADR_WIDTH-1:0]   inbetween_shift_hash_adr_corrected  [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
+wire                            inbetween_shift_valid_corrected     [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
 
 
 genvar i,j;
@@ -64,31 +65,31 @@ always @(posedge clk) begin
         forward_valid <= '{default: '0};
         forward_shift_hash_adr <= '{default: '0};
         forward_shift_valid <= '{default: '0};
-        forward_next_mem_hash_adr <= '{default: '0};
-        forward_next_mem_updated <= '{default: '0};
-        forward_next_mem_valid <= '{default: '0};
+//        forward_next_mem_hash_adr <= '{default: '0};
+//        forward_next_mem_updated <= '{default: '0};
+//        forward_next_mem_valid <= '{default: '0};
     end else begin
-        forward_hash_adr[1] = forward_hash_adr_i;
-        forward_data[1] = forward_data_i;
-        forward_key[1] = forward_key_i;
-        forward_updated_mem[1] = forward_updated_mem_i;
-        forward_valid[1] = forward_valid_i;
-        forward_shift_hash_adr[1] = forward_shift_hash_adr_i;
-        forward_shift_valid[1] = forward_shift_valid_i;
+        forward_hash_adr[FORWARDED_CLOCK_CYCLES-1] <= forward_hash_adr_i;
+        forward_data[FORWARDED_CLOCK_CYCLES-1] <= forward_data_i;
+        forward_key[FORWARDED_CLOCK_CYCLES-1] <= forward_key_i;
+        forward_updated_mem[FORWARDED_CLOCK_CYCLES-1] <= forward_updated_mem_i;
+        forward_valid[FORWARDED_CLOCK_CYCLES-1] <= forward_valid_i;
+        forward_shift_hash_adr[FORWARDED_CLOCK_CYCLES-1] <= forward_shift_hash_adr_i;
+        forward_shift_valid[FORWARDED_CLOCK_CYCLES-1] <= forward_shift_valid_i;
 //        forward_next_mem_hash_adr[1] = forward_next_mem_hash_adr_i;
 //        forward_next_mem_updated[1] = forward_next_mem_updated_i;
 //        forward_next_mem_valid[1] = forward_next_mem_valid_i;
-        for (int i = 1; i < FORWARDED_CLOCK_CYCLES-1; i = i + 1) begin
-            forward_hash_adr[i+1] = forward_hash_adr[i];
-            forward_data[i+1] = forward_data[i];
-            forward_key[i+1] = forward_key[i];
-            forward_updated_mem[i+1] = forward_updated_mem[i];
-            forward_valid[i+1] = forward_valid[i];
-            forward_shift_hash_adr[i+1] = forward_shift_hash_adr[i];
-            forward_shift_valid[i+1] = forward_shift_valid[i];
-            forward_next_mem_hash_adr[i+1] = forward_next_mem_hash_adr[i];
-            forward_next_mem_updated[i+1] = forward_next_mem_updated[i];
-            forward_next_mem_valid[i+1] = forward_next_mem_valid[i];
+        for (int i = 0; i < FORWARDED_CLOCK_CYCLES-1; i = i + 1) begin
+            forward_hash_adr[i] <= forward_hash_adr[i+1];
+            forward_data[i] <= forward_data[i+1];
+            forward_key[i] <= forward_key[i+1];
+            forward_updated_mem[i] <= forward_updated_mem[i+1];
+            forward_valid[i] <= forward_valid[i+1];
+            forward_shift_hash_adr[i] <= forward_shift_hash_adr[i+1];
+            forward_shift_valid[i] <= forward_shift_valid[i+1];
+//            forward_next_mem_hash_adr[i+1] = forward_next_mem_hash_adr[i];
+//            forward_next_mem_updated[i+1] = forward_next_mem_updated[i];
+//            forward_next_mem_valid[i+1] = forward_next_mem_valid[i];
         end
     end
 end
@@ -114,16 +115,16 @@ generate
                         .new_shift_adr_i(new_shift_adr_i[j]), //
                         .new_valid_i(new_valid_i[j]), 
                         .new_shift_valid_i(new_shift_valid_i[j]), //
-                        .forward_hash_adr_i(forward_hash_adr_i[i][j]),
-                        .forward_data_i(forward_data_i[i][j]),
-                        .forward_key_i(forward_key_i[i][j]),
-                        .forward_updated_mem_i(forward_updated_mem_i[i][j]),
-                        .forward_valid_i(forward_valid_i[i][j]),
-                        .forward_shift_hash_adr_i(forward_shift_hash_adr_i[i][j]), //
-                        .forward_shift_valid_i(forward_shift_valid_i[i][j]),       //
-                        .forward_next_mem_hash_adr_i(forward_hash_adr_i[i+1][j]), //
-                        .forward_next_mem_updated_i(forward_updated_mem_i[i+1][j]),   //
-                        .forward_next_mem_valid_i(forward_valid_i[i+1][j]),       //
+                        .forward_hash_adr_i(forward_hash_adr[i][j][HASH_TABLE_ADR_WIDTH[j]-1:0]),
+                        .forward_data_i(forward_data[i][j]),
+                        .forward_key_i(forward_key[i][j]),
+                        .forward_updated_mem_i(forward_updated_mem[i][j]),
+                        .forward_valid_i(forward_valid[i][j]),
+                        .forward_shift_hash_adr_i(forward_shift_hash_adr[i][j]), //
+                        .forward_shift_valid_i(forward_shift_valid[i][j]),       //
+                        .forward_next_mem_hash_adr_i(forward_hash_adr[i][j+1][HASH_TABLE_ADR_WIDTH[j+1]-1:0]), //
+                        .forward_next_mem_updated_i(forward_updated_mem[i][j+1]),   //
+                        .forward_next_mem_valid_i(forward_valid[i][j+1]),       //
                         .correct_key(inbetween_key_corrected[i][j]),
                         .correct_data(inbetween_data_corrected[i][j]),
                         .correct_is_valid(inbetween_valid_corrected[i][j]),
@@ -143,19 +144,19 @@ generate
                         .new_hash_adr_i(new_hash_adr_i[j]),
                         .new_data_i(new_data_i[j]),
                         .new_key_i(new_key_i[j]),
-                        .new_shift_adr_i(0), //
+                        .new_shift_adr_i(1'b0), //
                         .new_valid_i(new_valid_i[j]), 
-                        .new_shift_valid_i(0), //
-                        .forward_hash_adr_i(forward_hash_adr_i[i][j]),
-                        .forward_data_i(forward_data_i[i][j]),
-                        .forward_key_i(forward_key_i[i][j]),
-                        .forward_updated_mem_i(forward_updated_mem_i[i][j]),
-                        .forward_valid_i(forward_valid_i[i][j]),
-                        .forward_shift_hash_adr_i(0), //
-                        .forward_shift_valid_i(0),       //
-                        .forward_next_mem_hash_adr_i(0), //
-                        .forward_next_mem_updated_i(0),   //
-                        .forward_next_mem_valid_i(0),       //
+                        .new_shift_valid_i(1'b0), //
+                        .forward_hash_adr_i(forward_hash_adr[i][j][HASH_TABLE_ADR_WIDTH[j]-1:0]),
+                        .forward_data_i(forward_data[i][j]),
+                        .forward_key_i(forward_key[i][j]),
+                        .forward_updated_mem_i(forward_updated_mem[i][j]),
+                        .forward_valid_i(forward_valid[i][j]),
+                        .forward_shift_hash_adr_i(1'b0), //
+                        .forward_shift_valid_i(1'b0),       //
+                        .forward_next_mem_hash_adr_i(1'b0), //
+                        .forward_next_mem_updated_i(1'b0),   //
+                        .forward_next_mem_valid_i(1'b0),       //
                         .correct_key(inbetween_key_corrected[i][j]),
                         .correct_data(inbetween_data_corrected[i][j]),
                         .correct_is_valid(inbetween_valid_corrected[i][j]),
@@ -183,16 +184,16 @@ generate
                         .new_shift_adr_i(inbetween_shift_hash_adr_corrected[i-1][j]), //
                         .new_valid_i(inbetween_valid_corrected[i-1][j]), 
                         .new_shift_valid_i(inbetween_shift_valid_corrected[i-1][j]), //
-                        .forward_hash_adr_i(forward_hash_adr_i[i][j]),
-                        .forward_data_i(forward_data_i[i][j]),
-                        .forward_key_i(forward_key_i[i][j]),
-                        .forward_updated_mem_i(forward_updated_mem_i[i][j]),
-                        .forward_valid_i(forward_valid_i[i][j]),
-                        .forward_shift_hash_adr_i(forward_shift_hash_adr_i[i][j]), //
-                        .forward_shift_valid_i(forward_shift_valid_i[i][j]),       //
-                        .forward_next_mem_hash_adr_i(forward_hash_adr_i[i+1][j]), //
-                        .forward_next_mem_updated_i(forward_updated_mem_i[i+1][j]),   //
-                        .forward_next_mem_valid_i(forward_valid_i[i+1][j]),       //
+                        .forward_hash_adr_i(forward_hash_adr[i][j][HASH_TABLE_ADR_WIDTH[j]-1:0]),
+                        .forward_data_i(forward_data[i][j]),
+                        .forward_key_i(forward_key[i][j]),
+                        .forward_updated_mem_i(forward_updated_mem[i][j]),
+                        .forward_valid_i(forward_valid[i][j]),
+                        .forward_shift_hash_adr_i(forward_shift_hash_adr[i][j]), //
+                        .forward_shift_valid_i(forward_shift_valid[i][j]),       //
+                        .forward_next_mem_hash_adr_i(forward_hash_adr[i][j+1][HASH_TABLE_ADR_WIDTH[j+1]-1:0]), //
+                        .forward_next_mem_updated_i(forward_updated_mem[i][j+1]),   //
+                        .forward_next_mem_valid_i(forward_valid[i][j+1]),       //
                         .correct_key(inbetween_key_corrected[i][j]),
                         .correct_data(inbetween_data_corrected[i][j]),
                         .correct_is_valid(inbetween_valid_corrected[i][j]),
@@ -212,19 +213,19 @@ generate
                         .new_hash_adr_i(new_hash_adr_i[j]),
                         .new_data_i(inbetween_data_corrected[i-1][j]),
                         .new_key_i(inbetween_key_corrected[i-1][j]),
-                        .new_shift_adr_i(0), //
+                        .new_shift_adr_i(1'b0), //
                         .new_valid_i(inbetween_valid_corrected[i-1][j]), 
-                        .new_shift_valid_i(0), //
-                        .forward_hash_adr_i(forward_hash_adr_i[i][j]),
-                        .forward_data_i(forward_data_i[i][j]),
-                        .forward_key_i(forward_key_i[i][j]),
-                        .forward_updated_mem_i(forward_updated_mem_i[i][j]),
-                        .forward_valid_i(forward_valid_i[i][j]),
-                        .forward_shift_hash_adr_i(0), //
-                        .forward_shift_valid_i(0),       //
-                        .forward_next_mem_hash_adr_i(0), //
-                        .forward_next_mem_updated_i(0),   //
-                        .forward_next_mem_valid_i(0),       //
+                        .new_shift_valid_i(1'b0), //
+                        .forward_hash_adr_i(forward_hash_adr[i][j][HASH_TABLE_ADR_WIDTH[j]-1:0]),
+                        .forward_data_i(forward_data[i][j]),
+                        .forward_key_i(forward_key[i][j]),
+                        .forward_updated_mem_i(forward_updated_mem[i][j]),
+                        .forward_valid_i(forward_valid[i][j]),
+                        .forward_shift_hash_adr_i(1'b0), //
+                        .forward_shift_valid_i(1'b0),       //
+                        .forward_next_mem_hash_adr_i(1'b0), //
+                        .forward_next_mem_updated_i(1'b0),   //
+                        .forward_next_mem_valid_i(1'b0),    //
                         .correct_key(inbetween_key_corrected[i][j]),
                         .correct_data(inbetween_data_corrected[i][j]),
                         .correct_is_valid(inbetween_valid_corrected[i][j]),
