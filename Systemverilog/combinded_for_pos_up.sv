@@ -36,13 +36,13 @@ module whole_forward_updater #(
 
 localparam FCC = FORWARDED_CLOCK_CYCLES-1;  //for the generation loop
 
-logic [MAX_HASH_ADR_WIDTH-1:0] forward_hash_adr [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
-logic [DATA_WIDTH-1:0] forward_data [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
-logic [KEY_WIDTH-1:0] forward_key [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
-logic forward_updated_mem [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
-logic forward_valid [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
-logic [MAX_HASH_ADR_WIDTH-1:0] forward_shift_hash_adr [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
-logic forward_shift_valid [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
+wire [MAX_HASH_ADR_WIDTH-1:0] forward_hash_adr [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
+wire [DATA_WIDTH-1:0] forward_data [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
+wire [KEY_WIDTH-1:0] forward_key [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
+wire forward_updated_mem [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
+wire forward_valid [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
+wire [MAX_HASH_ADR_WIDTH-1:0] forward_shift_hash_adr [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
+wire forward_shift_valid [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
 //logic [MAX_HASH_ADR_WIDTH-1:0] forward_next_mem_hash_adr [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
 //logic forward_next_mem_updated [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
 //logic forward_next_mem_valid [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
@@ -56,7 +56,7 @@ wire                            inbetween_shift_valid_corrected     [FORWARDED_C
 
 
 genvar i,j;
-always @(posedge clk) begin
+/*always @(posedge clk) begin
     if (reset == 1) begin
         forward_hash_adr <= '{default: '0};
         forward_data <= '{default: '0};
@@ -92,8 +92,120 @@ always @(posedge clk) begin
 //            forward_next_mem_valid[i+1] = forward_next_mem_valid[i];
         end
     end
-end
+end*/
+generate
+    for (j = 0; j < NUMBER_OF_TABLES ; j = j+1 ) begin
+        siso_register #(
+            .DATA_WIDTH(MAX_HASH_ADR_WIDTH), .DELAY(1))
+        forward_hash_adr_reg(
+            .clk(clk), .reset(reset), .write_en(clk_en),
+            .data_i(forward_hash_adr_i[j]),
+            .data_o(forward_hash_adr[FORWARDED_CLOCK_CYCLES-1][j]));
 
+        siso_register #(
+            .DATA_WIDTH(DATA_WIDTH), .DELAY(1))
+        forward_data_reg(
+            .clk(clk), .reset(reset), .write_en(clk_en),
+            .data_i(forward_data_i[j]),
+            .data_o(forward_data[FORWARDED_CLOCK_CYCLES-1][j]));
+
+        siso_register #(
+            .DATA_WIDTH(KEY_WIDTH), .DELAY(1))
+        forward_key_reg(
+            .clk(clk), .reset(reset), .write_en(clk_en),
+            .data_i(forward_key_i[j]),
+            .data_o(forward_key[FORWARDED_CLOCK_CYCLES-1][j]));
+
+        siso_register #(
+            .DATA_WIDTH(1), .DELAY(1))
+        forward_updated_mem_reg(
+            .clk(clk), .reset(reset), .write_en(clk_en),
+            .data_i(forward_updated_mem_i[j]),
+            .data_o(forward_updated_mem[FORWARDED_CLOCK_CYCLES-1][j]));
+
+        siso_register #(
+            .DATA_WIDTH(1), .DELAY(1))
+        forward_valid_reg(
+            .clk(clk), .reset(reset), .write_en(clk_en),
+            .data_i(forward_valid_i[j]),
+            .data_o(forward_valid[FORWARDED_CLOCK_CYCLES-1][j]));
+        
+        if (j <= NUMBER_OF_TABLES-2) begin
+            siso_register #(
+                .DATA_WIDTH(MAX_HASH_ADR_WIDTH), .DELAY(1))
+            forward_shift_hash_adr_reg(
+                .clk(clk), .reset(reset), .write_en(clk_en),
+                .data_i(forward_shift_hash_adr_i[j]),
+                .data_o(forward_shift_hash_adr[FORWARDED_CLOCK_CYCLES-1][j]));
+
+            siso_register #(
+                .DATA_WIDTH(1), .DELAY(1))
+            forward_shift_valid_reg(
+                .clk(clk), .reset(reset), .write_en(clk_en),
+                .data_i(forward_shift_valid_i[j]),
+                .data_o(forward_shift_valid[FORWARDED_CLOCK_CYCLES-1][j]));
+        end
+        
+    end
+endgenerate
+
+generate
+    for (i = FORWARDED_CLOCK_CYCLES-1; i > 0; i = i-1) begin
+        for (j = 0; j < NUMBER_OF_TABLES; j = j+1) begin
+            siso_register #(
+                .DATA_WIDTH(MAX_HASH_ADR_WIDTH), .DELAY(1))
+            forward_hash_adr_reg_l(
+                .clk(clk), .reset(reset), .write_en(clk_en),
+                .data_i(forward_hash_adr[i][j]),
+                .data_o(forward_hash_adr[i-1][j]));
+
+            siso_register #(
+                .DATA_WIDTH(DATA_WIDTH), .DELAY(1))
+            forward_data_reg_l(
+                .clk(clk), .reset(reset), .write_en(clk_en),
+                .data_i(forward_data[i][j]),
+                .data_o(forward_data[i-1][j]));
+
+            siso_register #(
+                .DATA_WIDTH(KEY_WIDTH), .DELAY(1))
+            forward_key_reg_l(
+                .clk(clk), .reset(reset), .write_en(clk_en),
+                .data_i(forward_key[i][j]),
+                .data_o(forward_key[i-1][j]));
+
+            siso_register #(
+                .DATA_WIDTH(1), .DELAY(1))
+            forward_updated_mem_reg_l(
+                .clk(clk), .reset(reset), .write_en(clk_en),
+                .data_i(forward_updated_mem[i][j]),
+                .data_o(forward_updated_mem[i-1][j]));
+
+            siso_register #(
+                .DATA_WIDTH(1), .DELAY(1))
+            forward_valid_reg_l(
+                .clk(clk), .reset(reset), .write_en(clk_en),
+                .data_i(forward_valid[i][j]),
+                .data_o(forward_valid[i-1][j]));
+
+            if (j <= NUMBER_OF_TABLES-2) begin
+                siso_register #(
+                    .DATA_WIDTH(MAX_HASH_ADR_WIDTH), .DELAY(1))
+                forward_shift_hash_adr_reg_l(
+                    .clk(clk), .reset(reset), .write_en(clk_en),
+                    .data_i(forward_shift_hash_adr[i][j]),
+                    .data_o(forward_shift_hash_adr[i-1][j]));
+
+                siso_register #(
+                    .DATA_WIDTH(1), .DELAY(1))
+                forward_shift_valid_reg_l(
+                    .clk(clk), .reset(reset), .write_en(clk_en),
+                    .data_i(forward_shift_valid[i][j]),
+                    .data_o(forward_shift_valid[i-1][j]));
+            end
+            
+        end
+    end
+endgenerate
 
 generate
     for (i = 0; i < FORWARDED_CLOCK_CYCLES; i = i + 1 ) begin

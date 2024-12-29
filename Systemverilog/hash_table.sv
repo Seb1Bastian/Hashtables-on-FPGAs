@@ -197,7 +197,7 @@ generate
     assign forward_shift_valid[0] = flags_1[1];
     for (i = 1; i < NUMBER_OF_TABLES-1 ; i = i+1 ) begin
         assign forward_shift_hash_adr[i] = (write_shift[i-1] == 1'b1) ? hash_adr_2[i] : hash_adr_1[i]; // if shifted from i to i+1 the shift values for i+2 must be updated
-        assign forward_shift_valid[i] = (write_shift[i-1] == 1'b1) ? flags_2[i] : flags_1[i];
+        assign forward_shift_valid[i] = (write_shift[i-1] == 1'b1) ? flags_2[i+1] : flags_1[i+1];
     end
 endgenerate
 generate
@@ -378,7 +378,7 @@ assign flags_0_delayed = { << { flags_0_packed_delayed}};
 assign ready_o = ready_i;
 
 
-assign delete_write_read_i_valid = valid_i === 1'b1 ? delete_write_read_i : 2'b00; //nothing operation
+assign delete_write_read_i_valid = valid_i == 1'b1 ? delete_write_read_i : 2'b00; //nothing operation
 
 
 endmodule
