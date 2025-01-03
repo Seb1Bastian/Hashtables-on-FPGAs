@@ -1,8 +1,6 @@
-module axi_wrapper #(parameter KEY_WIDTH = 2,
-                     parameter DATA_WIDTH = 28,
-                     parameter NUMBER_OF_TABLES = 3,
-                     parameter [32*NUMBER_OF_TABLES-1:0] HASH_TABLE_SIZE = 96'h000000020000000200000002,
-                     parameter [KEY_WIDTH*NUMBER_OF_TABLES*2-1:0] Q_MATRIX = 12'h0)
+module axi_wrapper #(parameter KEY_WIDTH = 4,
+                     parameter DATA_WIDTH = 26,
+                     parameter NUMBER_OF_TABLES = 3)
 ( 
     input clk,
     input reset,
@@ -11,13 +9,12 @@ module axi_wrapper #(parameter KEY_WIDTH = 2,
     input valid_i,
     output ready_o,
     output valid_o,
-    output [2+DATA_WIDTH+KEY_WIDTH-1:0] data_o ); 
+    output [2+DATA_WIDTH+KEY_WIDTH-1:0] data_o );
+
 
 hash_table #( .KEY_WIDTH(KEY_WIDTH),
               .DATA_WIDTH(DATA_WIDTH),
-              .NUMBER_OF_TABLES(NUMBER_OF_TABLES),
-              .SIZES(HASH_TABLE_SIZE),
-              .MATRIX(Q_MATRIX) ) 
+              .NUMBER_OF_TABLES(NUMBER_OF_TABLES)) 
 the_table ( 
     .clk(clk),
     .reset(reset),

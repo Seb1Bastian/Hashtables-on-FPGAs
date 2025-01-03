@@ -1,8 +1,6 @@
 module hash_table #(parameter KEY_WIDTH = 2,
                     parameter DATA_WIDTH = 32,
-                    parameter NUMBER_OF_TABLES = 3,
-                    parameter [32*NUMBER_OF_TABLES-1:0] SIZES = 96'h000000020000000200000002,
-                    parameter [KEY_WIDTH*NUMBER_OF_TABLES*2-1:0] MATRIX = 12'h0)(
+                    parameter NUMBER_OF_TABLES = 3)(
     input   logic clk,
     input   logic reset,
     input   logic [KEY_WIDTH-1:0] key_in,
@@ -18,8 +16,8 @@ module hash_table #(parameter KEY_WIDTH = 2,
     output  wire no_element_found_o,
     output  wire key_already_present_o
 );
-localparam integer HASH_TABLE_SIZE[NUMBER_OF_TABLES-1:0] = '{SIZES[95:64],SIZES[63:32],SIZES[31:0]};
-localparam [KEY_WIDTH-1:0] Q_MATRIX[NUMBER_OF_TABLES-1:0][HASH_TABLE_SIZE[0]-1:0] = '{'{2'b00,2'b01},'{2'b10,2'b00},'{2'b00,2'b00}};
+localparam integer HASH_TABLE_SIZE[NUMBER_OF_TABLES-1:0] = '{32'h2,32'h2,32'h2};
+localparam [KEY_WIDTH-1:0] Q_MATRIX[NUMBER_OF_TABLES-1:0][HASH_TABLE_SIZE[0]-1:0] = '{'{4'b0000,4'b0100},'{4'b0000,4'b1000},'{4'b0000,4'b0001}};
 localparam HASH_TABLE_MAX_SIZE = HASH_TABLE_SIZE[0];
 
 wire [KEY_WIDTH-1:0]    key_in_delayed;
@@ -65,7 +63,6 @@ wire                            write_shift             [NUMBER_OF_TABLES-2:0];
 
 wire [KEY_WIDTH-1:0]            correct_key         [NUMBER_OF_TABLES-1:0];
 wire [DATA_WIDTH-1:0]           correct_data        [NUMBER_OF_TABLES-1:0];
-wire [KEY_WIDTH+DATA_WIDTH-1:0] correct_key_data    [NUMBER_OF_TABLES-1:0];
 wire                            correct_is_valid    [NUMBER_OF_TABLES-1:0];
 wire [HASH_TABLE_MAX_SIZE-1:0]  correct_shift_adr   [NUMBER_OF_TABLES-2:0];
 wire                            correct_shift_valid [NUMBER_OF_TABLES-2:0];
@@ -95,8 +92,8 @@ generate
         )
         block_ram(
             .clk(clk),
-            .ena(1'b1),     //needs to be changed
-            .enb(1'b1),     //needs to be changed
+            .ena(1'b1),     //probably needs not to be changed
+            .enb(1'b1),     //probably needs not to be changed
             .wea((write_en[i] && ready_i)),
             .addra(hash_adr_write[i][HASH_TABLE_SIZE[i]-1:0]),
             .addrb(hash_adrs_out[i][HASH_TABLE_SIZE[i]-1:0]),
@@ -169,7 +166,7 @@ generate
         h3_hash_function 
             #(.KEY_WIDTH(KEY_WIDTH),
               .HASH_ADR_WIDTH(HASH_TABLE_SIZE[i]),
-              .Q_MATRIX(Q_MATRIX[i][HASH_TABLE_MAX_SIZE-1:0])
+              .Q_MATRIX(Q_MATRIX[i+1][HASH_TABLE_MAX_SIZE-1:0])
         )
         hash_1(
             .key_in(data_out_of_block_ram[i][KEY_WIDTH+DATA_WIDTH-1:DATA_WIDTH]),
@@ -179,25 +176,25 @@ generate
 endgenerate
 
 generate
-    for (i = 1; i < NUMBER_OF_TABLES-1; i = i + 1) begin
+    for (i = 0; i < NUMBER_OF_TABLES-2; i = i + 1) begin
         h3_hash_function 
             #(.KEY_WIDTH(KEY_WIDTH),
               .HASH_ADR_WIDTH(HASH_TABLE_SIZE[i]),
-              .Q_MATRIX(Q_MATRIX[i][HASH_TABLE_MAX_SIZE-1:0])
+              .Q_MATRIX(Q_MATRIX[i+2][HASH_TABLE_MAX_SIZE-1:0])
         )
         hash_2(
-            .key_in(data_out_of_block_ram[i-1][KEY_WIDTH+DATA_WIDTH-1:DATA_WIDTH]),
-            .hash_adr_out(hash_adr_2[i])
+            .key_in(correct_key[i]),
+            .hash_adr_out(hash_adr_2[i+1])
         );
     end
 endgenerate
 
 generate
-    assign forward_shift_hash_adr[0] = hash_adr_1[1];
-    assign forward_shift_valid[0] = flags_1[1];
+    assign forward_shift_hash_adr[0] = hash_adrs_out_delayed[1];
+    assign forward_shift_valid[0] = correct_is_valid[1];
     for (i = 1; i < NUMBER_OF_TABLES-1 ; i = i+1 ) begin
-        assign forward_shift_hash_adr[i] = (write_shift[i-1] == 1'b1) ? hash_adr_2[i] : hash_adr_1[i]; // if shifted from i to i+1 the shift values for i+2 must be updated
-        assign forward_shift_valid[i] = (write_shift[i-1] == 1'b1) ? flags_2[i+1] : flags_1[i+1];
+        assign forward_shift_hash_adr[i] = (write_shift[i] == 1'b1) ? hash_adr_2[i] : hash_adrs_out_delayed[i]; // if shifted from i to i+1 the shift values for i+2 must be updated
+        assign forward_shift_valid[i] = correct_is_valid[i+1]; //(write_shift[i] == 1'b1) ? flags_2[i+1] : correct_is_valid[i+1];
     end
 endgenerate
 generate
@@ -231,6 +228,8 @@ whole_forward_updater #(
     .forward_valid_i(write_valid_flag),
     .forward_shift_hash_adr_i(forward_shift_hash_adr),
     .forward_shift_valid_i(forward_shift_valid),
+    .forward_shift_shift_valid_i(flags_2),
+    .forward_write_shift_i(write_shift),
 //    input .[SHIFT_HASH_ADR_WIDTH-1:0] forward_next_mem_hash_adr_i [NUMBER_OF_TABLES-2:0],
 //    input .forward_next_mem_updated_i [NUMBER_OF_TABLES-2:0],
 //    input .forward_next_mem_valid_i [NUMBER_OF_TABLES-2:0],
@@ -243,11 +242,6 @@ whole_forward_updater #(
 );
 
 
-generate
-    for (i = 0; i < NUMBER_OF_TABLES ; i = i+1 ) begin
-        assign correct_key_data[i] = {correct_key[i], correct_data[i]};
-    end
-endgenerate
 controller #(
     .KEY_WIDTH(KEY_WIDTH),
     .DATA_WIDTH(DATA_WIDTH),

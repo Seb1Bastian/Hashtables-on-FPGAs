@@ -18,15 +18,17 @@ genvar i,j;
 endgenerate*/
 
 generate
-    for (i = 0; i < KEY_WIDTH; i = i + 1) begin
-        assign org_matrix[i] = Q_MATRIX[i];
+    for (i = 0; i < HASH_ADR_WIDTH; i = i + 1) begin
+        for (j = 0; j < KEY_WIDTH; j = j + 1) begin
+            assign org_matrix[i][j] = Q_MATRIX[i][j];
+        end
     end
 endgenerate
 
 generate
     for (i = 0; i < KEY_WIDTH; i = i + 1) begin
         for (j = 0; j < HASH_ADR_WIDTH; j = j + 1) begin
-            assign and_matrix[i][j] = key_in[j] & org_matrix[j][i];
+            assign and_matrix[j][i] = key_in[i] & org_matrix[j][i];
         end        
     end
 endgenerate

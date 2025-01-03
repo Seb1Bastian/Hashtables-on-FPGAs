@@ -11,14 +11,18 @@ module controller #(parameter KEY_WIDTH = 2,
     input   logic [KEY_WIDTH-1:0] read_out_keys_i [NUMBER_OF_TABLES-1:0],
     input   logic [DATA_WIDTH-1:0] read_out_data_i [NUMBER_OF_TABLES-1:0],
     input   logic [HASH_TABLE_MAX_SIZE-1:0] read_out_hash_adr_i [NUMBER_OF_TABLES-2:0], // von i nach i+1
+    //input   logic [HASH_TABLE_MAX_SIZE-1:0] shift_shift_hash_adr_i [NUMBER_OF_TABLES-3:0], //unsure of the index  shift shift
     input   logic valid_flags_0_i [NUMBER_OF_TABLES-1:0],
     input   logic valid_flags_1_i [NUMBER_OF_TABLES-1:1],
+    //input   logic valid_flags_2_i [NUMBER_OF_TABLES-1:2],                             //unsure of the index  shift shift
     output  wire write_en_o [NUMBER_OF_TABLES-1:0],
     output  wire write_shift_o [NUMBER_OF_TABLES-2:0],
     output  wire write_valid_flag_o [NUMBER_OF_TABLES-1:0],
     output  wire [KEY_WIDTH-1:0] keys_o [NUMBER_OF_TABLES-1:0],
     output  wire [DATA_WIDTH-1:0] data_o [NUMBER_OF_TABLES-1:0],
     output  wire [HASH_TABLE_MAX_SIZE-1:0] hash_adr_o [NUMBER_OF_TABLES-1:0],
+    //output  wire [HASH_TABLE_MAX_SIZE-1:0] shift_hash_adr_o [NUMBER_OF_TABLES-2:0], // shift shift
+    //output  wire [HASH_TABLE_MAX_SIZE-1:0] shift_valid_o [NUMBER_OF_TABLES-2:0],    // shift shift
     output  wire [DATA_WIDTH-1:0] read_data_o,
     output  wire valid_o,
     output  wire no_deletion_target_o,
