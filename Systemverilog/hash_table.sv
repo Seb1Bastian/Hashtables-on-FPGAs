@@ -1,6 +1,7 @@
 module hash_table #(parameter KEY_WIDTH = 2,
                     parameter DATA_WIDTH = 32,
-                    parameter NUMBER_OF_TABLES = 3)(
+                    parameter NUMBER_OF_TABLES = 3,
+                    parameter CAM_SIZE = 8)(
     input   logic clk,
     input   logic reset,
     input   logic [KEY_WIDTH-1:0] key_in,
@@ -68,6 +69,20 @@ wire [HASH_TABLE_MAX_SIZE-1:0]  correct_shift_adr   [NUMBER_OF_TABLES-2:0];
 wire                            correct_shift_valid [NUMBER_OF_TABLES-2:0];
 
 
+wire [DATA_WIDTH-1:0] correct_cam_data;
+wire correct_cam_valid;
+wire cam_del;
+wire cam_write;
+wire [KEY_WIDTH-1:0] cam_write_key;
+wire [DATA_WIDTH-1:0] cam_write_data;
+wire [KEY_WIDTH-1:0] key_in_cam_delayed;
+
+wire [DATA_WIDTH-1:0] cam_read_data;
+wire [DATA_WIDTH-1:0] cam_read_data_delayed;
+wire cam_read_valid;
+wire cam_read_valid_delayed;
+
+
 genvar i;
 generate
     for (i = 0; i < NUMBER_OF_TABLES; i = i + 1) begin
@@ -102,6 +117,27 @@ generate
         );
     end
 endgenerate
+
+
+hash_cash#( 
+    .KEY_WIDTH(KEY_WIDTH),
+    .DATA_WIDTH(DATA_WIDTH),
+    .MEM_SIZE(CAM_SIZE)
+) hash_cam (
+    .clk(clk),
+    .reset(reset),
+    .data_in(cam_write_data),
+    .key_write_i(cam_write_key),
+    .key_read_i(key_in),
+    .cs(ready_i),
+    .we(cam_write),
+    .read_en(1'b1),
+    .del(cam_del),
+    .data_out(cam_read_data),
+    .valid_o(cam_read_valid),
+    .error()
+);
+
 
 generate
     for (i = 0; i < NUMBER_OF_TABLES; i = i + 1) begin
@@ -241,6 +277,27 @@ whole_forward_updater #(
     .shift_valid_corrected_o(correct_shift_valid)
 );
 
+cam_forwarder #(
+    .KEY_WIDTH(KEY_WIDTH),
+    .DATA_WIDTH(DATA_WIDTH)
+) cam_forwarder (
+    .clk(clk),
+    .reset(reset),
+    .clk_en(ready_i),
+
+    .new_key_i(key_in_delayed),
+    .new_data_i(cam_read_data_delayed),
+    .new_valid_i(cam_read_valid_delayed),
+
+    .forward_key_i(cam_write_key),
+    .forward_data_i(cam_write_data),
+    .forward_write_i(cam_write),
+    .forward_del_i(cam_del),
+
+    .corrected_data_o(correct_cam_data),
+    .correct_valid_o(correct_cam_valid)
+);
+
 
 controller #(
     .KEY_WIDTH(KEY_WIDTH),
@@ -258,6 +315,8 @@ controller #(
     .read_out_hash_adr_i(correct_shift_adr),
     .valid_flags_0_i(correct_is_valid),
     .valid_flags_1_i(correct_shift_valid),
+    .CAM_data_i(correct_cam_data),
+    .CAM_valid_i(correct_cam_valid),
     .write_en_o(write_en),
     .write_shift_o(write_shift),
     .write_valid_flag_o(write_valid_flag),
@@ -266,6 +325,10 @@ controller #(
     .hash_adr_o(hash_adr_write),
     .read_data_o(read_data_o),
     .valid_o(valid_o),
+    .CAM_key_o(cam_write_key),
+    .CAM_data_o(cam_write_data),
+    .CAM_write_en_o(cam_write),
+    .CAM_delete_o(cam_del),
     .no_deletion_target_o(no_deletion_target_o),
     .no_write_space_o(no_write_space_o),
     .no_element_found_o(no_element_found_o),
@@ -275,6 +338,27 @@ controller #(
 
 
 //delaying signals to the right time
+
+siso_register #(
+    .DATA_WIDTH(DATA_WIDTH),
+    .DELAY(1))
+data_cam_delay(
+    .clk(clk),
+    .reset(reset),
+    .write_en(ready_i),
+    .data_i(cam_read_data),
+    .data_o(cam_read_data_delayed));
+
+siso_register #(
+    .DATA_WIDTH(1),
+    .DELAY(1))
+valid_cam_delay(
+    .clk(clk),
+    .reset(reset),
+    .write_en(ready_i),
+    .data_i(cam_read_valid),
+    .data_o(cam_read_valid_delayed));
+
 
 siso_register #(
     .DATA_WIDTH(DATA_WIDTH),

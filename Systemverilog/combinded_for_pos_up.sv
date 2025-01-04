@@ -23,6 +23,8 @@ module whole_forward_updater #(
     input logic forward_valid_i [NUMBER_OF_TABLES-1:0],
     input logic [MAX_HASH_ADR_WIDTH-1:0] forward_shift_hash_adr_i [NUMBER_OF_TABLES-2:0],
     input logic forward_shift_valid_i [NUMBER_OF_TABLES-2:0],
+    input logic forward_shift_shift_valid_i [NUMBER_OF_TABLES-1:2],
+    input logic forward_write_shift_i[NUMBER_OF_TABLES-2:0],
 //    input logic [MAX_HASH_ADR_WIDTH-1:0] forward_next_mem_hash_adr_i [NUMBER_OF_TABLES-2:0],
 //    input logic forward_next_mem_updated_i [NUMBER_OF_TABLES-2:0],
 //    input logic forward_next_mem_valid_i [NUMBER_OF_TABLES-2:0],
@@ -43,9 +45,12 @@ wire forward_updated_mem [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
 wire forward_valid [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
 wire [MAX_HASH_ADR_WIDTH-1:0] forward_shift_hash_adr [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
 wire forward_shift_valid [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
+wire forward_not_shift_shift_valid [NUMBER_OF_TABLES-2:0];
 //logic [MAX_HASH_ADR_WIDTH-1:0] forward_next_mem_hash_adr [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
 //logic forward_next_mem_updated [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
 //logic forward_next_mem_valid [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
+
+logic delayed_forward_write_shift [NUMBER_OF_TABLES-2:0];
 
 
 wire                            inbetween_valid_corrected           [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-1:0];
@@ -54,6 +59,13 @@ wire [DATA_WIDTH-1:0]           inbetween_data_corrected            [FORWARDED_C
 wire [MAX_HASH_ADR_WIDTH-1:0]   inbetween_shift_hash_adr_corrected  [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
 wire                            inbetween_shift_valid_corrected     [FORWARDED_CLOCK_CYCLES-1:0][NUMBER_OF_TABLES-2:0];
 
+always @(posedge clk) begin
+    if (reset == 1) begin
+        delayed_forward_write_shift <= '{default: '0};
+    end else if (clk_en == 1) begin
+        delayed_forward_write_shift <= forward_write_shift_i;
+    end
+end
 
 genvar i,j;
 /*always @(posedge clk) begin
@@ -143,9 +155,15 @@ generate
             forward_shift_valid_reg(
                 .clk(clk), .reset(reset), .write_en(clk_en),
                 .data_i(forward_shift_valid_i[j]),
-                .data_o(forward_shift_valid[FORWARDED_CLOCK_CYCLES-1][j]));
+                .data_o(forward_not_shift_shift_valid[j]));
         end
-        
+    end
+endgenerate
+
+generate
+    assign forward_shift_valid[FORWARDED_CLOCK_CYCLES-1][0] = forward_not_shift_shift_valid[0];
+    for (i = 1; i < NUMBER_OF_TABLES-1 ; i = i+1 ) begin
+        assign forward_shift_valid[FORWARDED_CLOCK_CYCLES-1][i] = (delayed_forward_write_shift[i] == 1'b1) ? forward_shift_shift_valid_i[i+1] : forward_not_shift_shift_valid[i];
     end
 endgenerate
 
@@ -224,9 +242,9 @@ generate
                         .new_hash_adr_i(new_hash_adr_i[j]),
                         .new_data_i(new_data_i[j]),
                         .new_key_i(new_key_i[j]),
-                        .new_shift_adr_i(new_shift_adr_i[j]), //
+                        .new_shift_adr_i(new_shift_adr_i[j]),
                         .new_valid_i(new_valid_i[j]), 
-                        .new_shift_valid_i(new_shift_valid_i[j]), //
+                        .new_shift_valid_i(new_shift_valid_i[j]),
                         .forward_hash_adr_i(forward_hash_adr[i][j][HASH_TABLE_ADR_WIDTH[j]-1:0]),
                         .forward_data_i(forward_data[i][j]),
                         .forward_key_i(forward_key[i][j]),
