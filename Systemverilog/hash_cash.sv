@@ -11,8 +11,8 @@ module hash_cash #(parameter DATA_WIDTH = 32,
     input   logic                   read_en ,
     input   logic                   del     ,
 
-    output  wire [DATA_WIDTH-1:0]  data_out,
-    output  wire                   valid_o,
+    output  logic [DATA_WIDTH-1:0] data_out,
+    output  logic                  valid_o,
     output  wire [1:0]             error
 ); 
 //--------------Internal variables---------------- 
@@ -86,7 +86,15 @@ assign delete_input = {MEM_SIZE{del}} & key_cells_fits_write_out;
 assign write_enable_input = demulitplexer_we_out;// & {MEM_SIZE{(!(|key_cells_fits_write_out))}};
 assign write_error = (|key_cells_fits_write_out) & we; //assumption each key exist only one time. write_error = 1 => wants to write with a key that is already inside the cash
 assign error[0] = write_error;
-assign data_out = multiplexer_out;
-assign valid_o = (|key_cells_fits_read_out) & read_en;
+
+always @(posedge clk ) begin
+    if (reset == 1) begin
+        data_out <= 0;
+        valid_o <= 0;
+    end else if (cs == 1) begin
+        data_out <= multiplexer_out;
+        valid_o <= (|key_cells_fits_read_out) & read_en;
+    end
+end
 
 endmodule // End of Module ram_sp_sr_sw
