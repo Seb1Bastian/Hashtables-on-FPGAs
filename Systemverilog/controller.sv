@@ -172,7 +172,7 @@ assign valid_o = (delete_write_read_i == NOTHING_OPERATION) ? 1'b0 : 1'b1;
 assign con_is_write = (delete_write_read_i == WRITE_OPERATION) ? 1'b1 : 1'b0;
 assign con_is_read = (delete_write_read_i == READ_OPERATION) ? 1'b1 : 1'b0;
 assign con_is_del = (delete_write_read_i == DELTE_OPERATION) ? 1'b1 : 1'b0;
-assign no_write = (~(|write));
+assign no_write = (~((|write) | write_CAM));
 assign write_shift_o = { << { write_shift[NUMBER_OF_TABLES-1:1]}};
 
 

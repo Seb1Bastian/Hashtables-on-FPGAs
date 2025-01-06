@@ -1,6 +1,6 @@
-module axi_wrapper #(parameter KEY_WIDTH = 4,
-                     parameter DATA_WIDTH = 26,
-                     parameter NUMBER_OF_TABLES = 3)
+module axi_wrapper #(parameter KEY_WIDTH = 15,
+                     parameter DATA_WIDTH = 15,
+                     parameter NUMBER_OF_TABLES = 10)
 ( 
     input clk,
     input reset,
