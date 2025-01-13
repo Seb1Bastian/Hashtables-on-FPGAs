@@ -1,7 +1,8 @@
 module axi_wrapper #(parameter KEY_WIDTH = 4,
                      parameter DATA_WIDTH = 26,
                      parameter NUMBER_OF_TABLES = 3,
-                     parameter BUCKET_SIZE = 1)
+                     parameter BUCKET_SIZE = 2,
+                     parameter CAM_SIZE = 8)
 ( 
     input clk,
     input reset,
@@ -18,7 +19,8 @@ wire [31:0] inbetween_data;
 hash_table #( .KEY_WIDTH(KEY_WIDTH),
               .DATA_WIDTH(DATA_WIDTH),
               .NUMBER_OF_TABLES(NUMBER_OF_TABLES),
-              .BUCKET_SIZE(BUCKET_SIZE)) 
+              .BUCKET_SIZE(BUCKET_SIZE),
+              .CAM_SIZE(CAM_SIZE)) 
 the_table ( 
     .clk(clk),
     .reset(reset),
