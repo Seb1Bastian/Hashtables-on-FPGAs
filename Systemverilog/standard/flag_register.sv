@@ -28,7 +28,7 @@ generate
             .clk(clk),
             .ena(ready_i),     //probably needs not to be changed
             .enb(ready_i),     //probably needs not to be changed
-            .wea((write_en[i])),
+            .wea((write_en)),
             .addra(write_adr),
             .addrb(read_adr_0),
             .dia(write_is_valid),
@@ -43,7 +43,7 @@ generate
             .clk(clk),
             .ena(ready_i),     //probably needs not to be changed
             .enb(ready_i),     //probably needs not to be changed
-            .wea((write_en[i])),
+            .wea((write_en)),
             .addra(write_adr),
             .addrb(read_adr_1),
             .dia(write_is_valid),
@@ -58,7 +58,7 @@ generate
             .clk(clk),
             .ena(ready_i),     //probably needs not to be changed
             .enb(ready_i),     //probably needs not to be changed
-            .wea((write_en[i])),
+            .wea((write_en)),
             .addra(write_adr),
             .addrb(read_adr_2),
             .dia(write_is_valid),
