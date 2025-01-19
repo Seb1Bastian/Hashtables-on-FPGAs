@@ -129,8 +129,8 @@ raw_mulitplexer #(
     .data_out(read_data)
 );
 
-assign read_data_o = {unary_or_same_key, con_is_write, con_is_read, con_is_del, read_data[DATA_WIDTH-5:0]};
-//assign read_data_o = read_key_data[DATA_WIDTH-1:0];
+//assign read_data_o = {unary_or_same_key, con_is_write, con_is_read, con_is_del, read_data[DATA_WIDTH-5:0]};
+assign read_data_o = read_data[DATA_WIDTH-1:0];
 /*assign no_deletion_target_o = ((!unary_or_same_key) && (delete_write_read_i == DELTE_OPERATION)) ? 1'b1 : 1'b0;
 assign no_write_space_o = ((~|write) && (delete_write_read_i == WRITE_OPERATION)) ? 1'b1 : 1'b0;
 assign no_element_found_o = ((!unary_or_same_key) && (delete_write_read_i == READ_OPERATION)) ? 1'b1 : 1'b0;

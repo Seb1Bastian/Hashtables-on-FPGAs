@@ -123,7 +123,8 @@ raw_mulitplexer_buckets #(
     .data_out(read_content)
 );
 assign read_data = (CAM_valid_i) ? CAM_data_i : read_content[DATA_WIDTH-1:0];   //decide whether use CAM data or memory data (assumption: cam_valid_i => no usefull data in memories)
-assign read_data_o = {unary_or_same_key, con_is_write, con_is_read, con_is_del, read_data[DATA_WIDTH-5:0]};
+//assign read_data_o = {unary_or_same_key, con_is_write, con_is_read, con_is_del, read_data[DATA_WIDTH-5:0]};
+assign read_data_o = read_data[DATA_WIDTH-1:0];
 
 always @(posedge clk) begin
     if (reset == 1) begin
