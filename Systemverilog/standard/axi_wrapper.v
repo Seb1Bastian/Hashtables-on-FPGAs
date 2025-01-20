@@ -37,6 +37,6 @@ the_table (
     .no_element_found_o(inbetween_data[30]),
     .key_already_present_o(inbetween_data[31]));
     
-assign inbetween_data[27:26] = 2'b00;
+assign inbetween_data[27:DATA_WIDTH] = 14'b11111111111111;
 assign data_o = inbetween_data;
 endmodule
