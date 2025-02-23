@@ -1,6 +1,7 @@
-module axi_wrapper #(parameter KEY_WIDTH = 15,
-                     parameter DATA_WIDTH = 15,
-                     parameter NUMBER_OF_TABLES = 10)
+module axi_wrapper #(parameter KEY_WIDTH = 5,
+                     parameter DATA_WIDTH = 25,
+                     parameter NUMBER_OF_TABLES = 5,
+                     parameter BUCKET_SIZE = 2)
 ( 
     input clk,
     input reset,
@@ -16,7 +17,8 @@ wire [31:0] inbetween_data;
 
 hash_table #( .KEY_WIDTH(KEY_WIDTH),
               .DATA_WIDTH(DATA_WIDTH),
-              .NUMBER_OF_TABLES(NUMBER_OF_TABLES)) 
+              .NUMBER_OF_TABLES(NUMBER_OF_TABLES),
+              .BUCKET_SIZE(BUCKET_SIZE)) 
 the_table ( 
     .clk(clk),
     .reset(reset),
@@ -33,6 +35,6 @@ the_table (
     .no_element_found_o(inbetween_data[30]),
     .key_already_present_o(inbetween_data[31]));
     
-assign inbetween_data[27:DATA_WIDTH] = 14'b11111111111111;
+assign inbetween_data[27 -: (28-DATA_WIDTH)] = {(28-DATA_WIDTH){1'b0}};
 assign data_o = inbetween_data;
 endmodule

@@ -76,7 +76,7 @@ always @(key_equal_older, new_valid_i, write_older, del_older) begin
 end
 
 assign key_equal_newer = (key_newer == new_key_i)? 1'b1 : 1'b0;
-always @(key_equal_newer, data_newer, write_newer, del_newer) begin
+always @(key_equal_newer, data_newer, write_newer, del_newer, inbetween_data_corrected) begin
     case ({key_equal_newer,write_newer,del_newer})
         3'b110 : corrected_data_o = data_newer;
         3'b101 : corrected_data_o = inbetween_data_corrected;

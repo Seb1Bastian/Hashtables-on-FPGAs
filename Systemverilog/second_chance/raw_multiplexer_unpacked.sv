@@ -1,26 +1,26 @@
-module raw_mulitplexer_packed #(parameter DATA_WIDTH = 32,
-                   parameter DATA_LINES = 4)(
-    input   logic [DATA_LINES-1:0][DATA_WIDTH-1:0] data_in,
-    input   logic [DATA_LINES-1:0] sel,
+module raw_mulitplexer_unpacked #(parameter DATA_WIDTH = 32,
+                         parameter BUCKET_SIZE = 1)(
+    input   logic [BUCKET_SIZE-1:0][DATA_WIDTH-1:0] data_in,
+    input   logic [BUCKET_SIZE-1:0] sel,
 
     output  wire [DATA_WIDTH-1:0] data_out
 ); 
 //--------------Internal variables----------------
 
-wire [DATA_LINES-1:0][DATA_WIDTH-1:0] data_and;
-wire [DATA_WIDTH-1:0][DATA_LINES-1:0] data_input_or;
+wire [BUCKET_SIZE-1:0][DATA_WIDTH-1:0] data_and;
+wire [DATA_WIDTH-1:0][BUCKET_SIZE-1:0] data_input_or;
 
 
 //--------------Code Starts Here------------------ 
 genvar i, j;
 generate
-    for (i = 0; i < DATA_LINES; i = i + 1) begin : and_gen
-        assign data_and[i] = data_in[i] & {DATA_WIDTH{sel[i]}};
+    for (j = 0; j < BUCKET_SIZE ; j++) begin
+        assign data_and[j] = data_in[j] & {DATA_WIDTH{sel[j]}};
     end
 endgenerate
 
 generate
-    for (i = 0; i < DATA_LINES; i = i + 1) begin : outer_loop
+    for (i = 0; i < BUCKET_SIZE; i = i + 1) begin : outer_loop
         for (j = 0; j < DATA_WIDTH; j = j + 1) begin : inner_loop
             assign data_input_or[j][i] = data_and[i][j];
         end

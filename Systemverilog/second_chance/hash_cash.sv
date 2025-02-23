@@ -25,6 +25,7 @@ wire [MEM_SIZE-1:0] delete_input;
 wire [MEM_SIZE-1:0] demulitplexer_we_out;
 wire [MEM_SIZE-1:0] write_enable_input;
 wire [DATA_WIDTH-1:0] multiplexer_out;
+wire write_error;
 
 //--------------Code Starts Here-------------------
 cash_data_cells #(
@@ -72,7 +73,7 @@ raw_demulitplexer #(
     .data_out(demulitplexer_we_out)
 );
 
-raw_mulitplexer_cam #(
+raw_mulitplexer_packed #(
     .DATA_WIDTH(DATA_WIDTH),
     .DATA_LINES(MEM_SIZE)
 ) multiplexer (

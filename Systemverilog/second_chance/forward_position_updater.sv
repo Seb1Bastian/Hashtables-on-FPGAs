@@ -33,7 +33,7 @@ module forward_position_updater #(
 );
 
 wire same_hash_adr_and_update;
-wire first_check_shift_adr;
+wire [SHIFT_HASH_ADR_WIDTH-1:0] first_check_shift_adr;
 wire first_check_shift_valid;
 wire shift_same_hash_adr_and_update;
 
