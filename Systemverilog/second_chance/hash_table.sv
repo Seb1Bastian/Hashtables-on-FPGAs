@@ -1,10 +1,13 @@
 module hash_table #(parameter KEY_WIDTH = 2,
                     parameter DATA_WIDTH = 32,
                     parameter NUMBER_OF_TABLES,
+                    parameter HASH_TABLE_MAX_SIZE,
+                    localparam integer HASH_TABLE_SIZE[NUMBER_OF_TABLES-1:0],
                     parameter BUCKET_SIZE = 1,
                     parameter CAM_SIZE = 128)(
     input   logic clk,
     input   logic reset,
+    input   logic [KEY_WIDTH-1:0] matrixes_i [NUMBER_OF_TABLES-1:0][HASH_TABLE_MAX_SIZE-1:0],
     input   logic [KEY_WIDTH-1:0] key_in,
     input   logic [DATA_WIDTH-1:0] data_in,
     input   logic [1:0] delete_write_read_i,
@@ -18,12 +21,14 @@ module hash_table #(parameter KEY_WIDTH = 2,
     output  wire no_element_found_o,
     output  wire key_already_present_o
 );
-localparam integer HASH_TABLE_SIZE[NUMBER_OF_TABLES-1:0] = '{32'd1,32'd1,32'd1,32'd1};
+/*localparam integer HASH_TABLE_SIZE[NUMBER_OF_TABLES-1:0] = '{32'd1,32'd1,32'd1,32'd1};
 localparam [KEY_WIDTH-1:0] Q_MATRIX[NUMBER_OF_TABLES-1:0][HASH_TABLE_SIZE[0]-1:0] = '{'{6'b000000},
                                                                                       '{6'b000100},
                                                                                       '{6'b000010},
                                                                                       '{6'b000001}};
-localparam HASH_TABLE_MAX_SIZE = HASH_TABLE_SIZE[0];
+localparam HASH_TABLE_MAX_SIZE = HASH_TABLE_SIZE[0];*/
+
+wire [KEY_WIDTH-1:0] correct_dim_matrix [NUMBER_OF_TABLES-1:0][HASH_TABLE_MAX_SIZE-1:0];
 
 wire [KEY_WIDTH-1:0]    key_in_delayed;
 wire [DATA_WIDTH-1:0]   data_in_delayed;
@@ -90,14 +95,21 @@ wire cam_read_valid_delayed;
 
 genvar i,j,l;
 generate
+    for (i = 0; i < NUMBER_OF_TABLES; i++) begin
+        for (j = 0; j < HASH_TABLE_MAX_SIZE; j++) begin
+            assign correct_dim_matrix[i][j] = matrixes_i[(i * HASH_TABLE_MAX_SIZE * KEY_WIDTH) + (j * KEY_WIDTH) :+ KEY_WIDTH];
+        end
+    end
+endgenerate
+generate
     for (i = 0; i < NUMBER_OF_TABLES; i = i + 1) begin
         h3_hash_function 
             #(.KEY_WIDTH(KEY_WIDTH),
-              .HASH_ADR_WIDTH(HASH_TABLE_SIZE[i]),
-              .Q_MATRIX(Q_MATRIX[i][HASH_TABLE_MAX_SIZE-1:0])
+              .HASH_ADR_WIDTH(HASH_TABLE_SIZE[i])
         )
         hash_0(
             .key_in(key_in),
+            .matrix_i(correct_dim_matrix[i]),
             .hash_adr_out(hash_adrs_out[i][HASH_TABLE_SIZE[i]-1:0])
         );
     end
@@ -216,10 +228,10 @@ generate
         for (j = 0; j < BUCKET_SIZE ; j = j + 1) begin
             h3_hash_function 
                 #(.KEY_WIDTH(KEY_WIDTH),
-                .HASH_ADR_WIDTH(HASH_TABLE_SIZE[i]),
-                .Q_MATRIX(Q_MATRIX[i+1][HASH_TABLE_MAX_SIZE-1:0])
+                .HASH_ADR_WIDTH(HASH_TABLE_SIZE[i])
             )hash_1(
                 .key_in(data_out_of_block_ram[i][j][KEY_WIDTH+DATA_WIDTH-1:DATA_WIDTH]),
+                .matrix_i(correct_dim_matrix[i]),
                 .hash_adr_out(hash_adr_1[i][j])
             );
         end
@@ -232,11 +244,11 @@ generate
         for(j = 0; j < BUCKET_SIZE; j++) begin
             h3_hash_function 
                 #(.KEY_WIDTH(KEY_WIDTH),
-                .HASH_ADR_WIDTH(HASH_TABLE_SIZE[i]),
-                .Q_MATRIX(Q_MATRIX[i+2][HASH_TABLE_MAX_SIZE-1:0])
+                .HASH_ADR_WIDTH(HASH_TABLE_SIZE[i])
             )
             hash_2(
                 .key_in(correct_key[i][j]),
+                .matrix_i(correct_dim_matrix[i]),
                 .hash_adr_out(hash_adr_2[i+1][j])
             );
         end

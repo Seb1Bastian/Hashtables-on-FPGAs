@@ -91,14 +91,14 @@ wire [HASH_TABLE_MAX_SIZE-1:0]  to_be_shifted_hash_adr  [NUMBER_OF_TABLES-1:0];
 genvar i,j,k,l;
 generate
     for (i = 0; i < NUMBER_OF_TABLES ; i++ ) begin
-        for (j = 0; j < BUCKET_SIZE ; j++ ) begin
+        for (j = 0; j < BUCKET_SIZE ; j++ ) begin //checks whether one of the read out keys has the same key as the input key
             assign same_key[i][j] = (key_i == read_out_keys_i[i][j] & valid_flags_0_i[i][j]) ? 1'b1 : 1'b0;
         end
     end
 endgenerate
-assign unary_or_same_key = (|same_key) | CAM_valid_i;
+assign unary_or_same_key = (|same_key) | CAM_valid_i;  //checks whether there is one read out element that has the same key as the input
 
-generate
+generate    //reduces the valid flags to one bit per table for a later use in a write operation, to compute in which table should inserted or shifted
     assign unary_valid[0] = &valid_flags_0_i[0];
     for (i = 1; i < NUMBER_OF_TABLES ; i++) begin
         assign unary_valid[i] = &valid_flags_0_i[i];
@@ -106,7 +106,7 @@ generate
     end
 endgenerate
 
-generate
+generate  //computes for a write operation for each table: in which bucket should be inserted if elements should be inserted into table i 
     for (i = 0; i < NUMBER_OF_TABLES ; i++ ) begin
         for (k = 0; k < BUCKET_SIZE; k++) begin
             if (k == 0) begin
