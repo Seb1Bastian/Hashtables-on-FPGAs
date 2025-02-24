@@ -1,13 +1,13 @@
 module hash_table #(parameter KEY_WIDTH = 2,
                     parameter DATA_WIDTH = 32,
-                    parameter NUMBER_OF_TABLES,
-                    parameter HASH_TABLE_MAX_SIZE,
-                    localparam integer HASH_TABLE_SIZE[NUMBER_OF_TABLES-1:0],
+                    parameter NUMBER_OF_TABLES = 5,
+                    parameter HASH_TABLE_MAX_SIZE = 5,
+                    parameter [32*NUMBER_OF_TABLES-1:0] HASH_TABLE_SIZES = {32'd5,32'd5,32'd5,32'd5},
                     parameter BUCKET_SIZE = 1,
-                    parameter CAM_SIZE = 128)(
+                    parameter CAM_SIZE = 8)(
     input   logic clk,
     input   logic reset,
-    input   logic [KEY_WIDTH-1:0] matrixes_i [NUMBER_OF_TABLES-1:0][HASH_TABLE_MAX_SIZE-1:0],
+    input   logic [NUMBER_OF_TABLES*HASH_TABLE_MAX_SIZE*KEY_WIDTH-1:0] matrixes_i,
     input   logic [KEY_WIDTH-1:0] key_in,
     input   logic [DATA_WIDTH-1:0] data_in,
     input   logic [1:0] delete_write_read_i,
@@ -27,6 +27,26 @@ localparam [KEY_WIDTH-1:0] Q_MATRIX[NUMBER_OF_TABLES-1:0][HASH_TABLE_SIZE[0]-1:0
                                                                                       '{6'b000010},
                                                                                       '{6'b000001}};
 localparam HASH_TABLE_MAX_SIZE = HASH_TABLE_SIZE[0];*/
+localparam integer HASH_TABLE_SIZE [NUMBER_OF_TABLES-1:0] = ADDR_CALC();
+
+typedef integer packed_array_t [NUMBER_OF_TABLES-1:0];
+function packed_array_t ADDR_CALC();
+    packed_array_t a;
+    for (int ii = 0; ii < NUMBER_OF_TABLES; ii++) begin
+        a[ii] = HASH_TABLE_SIZES[32*(ii+1)-1 -:32];
+    end
+    return a;
+endfunction
+
+genvar i,j,l;
+
+/*generate
+    for (i = 0; i < NUMBER_OF_TABLES; i++) begin
+        HASH_TABLE_SIZE[i] = HASH_TABLE_SIZES[(i+1)*32-1:-32];
+    end
+endgenerate*/
+
+
 
 wire [KEY_WIDTH-1:0] correct_dim_matrix [NUMBER_OF_TABLES-1:0][HASH_TABLE_MAX_SIZE-1:0];
 
@@ -93,11 +113,10 @@ wire cam_read_valid;
 wire cam_read_valid_delayed;
 
 
-genvar i,j,l;
 generate
     for (i = 0; i < NUMBER_OF_TABLES; i++) begin
         for (j = 0; j < HASH_TABLE_MAX_SIZE; j++) begin
-            assign correct_dim_matrix[i][j] = matrixes_i[(i * HASH_TABLE_MAX_SIZE * KEY_WIDTH) + (j * KEY_WIDTH) :+ KEY_WIDTH];
+            assign correct_dim_matrix[i][j] = matrixes_i[(i * HASH_TABLE_MAX_SIZE * KEY_WIDTH) + (j * KEY_WIDTH) +: KEY_WIDTH];
         end
     end
 endgenerate
