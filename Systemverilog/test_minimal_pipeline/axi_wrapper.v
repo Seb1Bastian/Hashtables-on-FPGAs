@@ -5,8 +5,10 @@ module axi_wrapper #(parameter DATA_WIDTH = 64)
     input [DATA_WIDTH-1:0] data_i,
     input ready_i,
     input valid_i,
+    input last_i,
     output ready_o,
     output valid_o,
+    output last_o,
     output [DATA_WIDTH-1:0] data_o );
     
 wire [DATA_WIDTH-1:0] inbetween_data;
@@ -19,8 +21,10 @@ the_table (
     .data_in(data_i[DATA_WIDTH-1:0]),
     .ready_i(ready_i),
     .valid_i(valid_i),
+    .last_i(last_i),
     .ready_o(ready_o),
     .valid_o(valid_o),
+    .last_o(last_o),
     .read_data_o(inbetween_data[DATA_WIDTH-1:0]));
     
 assign data_o = inbetween_data;
