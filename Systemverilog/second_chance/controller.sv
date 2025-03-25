@@ -49,7 +49,7 @@ localparam logic [1:0] DELTE_OPERATION   = 2'b11;
 
 wire [BUCKET_SIZE*BUCKET_SIZE-1:0]                              valid_flags_1 [NUMBER_OF_TABLES-1:0];
 
-logic                                                           used_space_in_CAM;
+integer                                                         used_space_in_CAM;
 wire                                                            write_CAM;
 wire                                                            delete_CAM;
 

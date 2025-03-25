@@ -4,8 +4,10 @@ module hash_table #(parameter DATA_WIDTH = 32)(
     input   logic [DATA_WIDTH-1:0] data_in,
     input   logic ready_i,
     input   logic valid_i,
+    input   logic last_i,
     output  wire ready_o,
-    output  wire valid_o
+    output  wire valid_o,
+    output  wire last_o,
     output  wire [DATA_WIDTH-1:0] read_data_o
 );
 /*localparam integer HASH_TABLE_SIZE[NUMBER_OF_TABLES-1:0] = '{32'd1,32'd1,32'd1,32'd1};
@@ -24,8 +26,6 @@ endgenerate*/
 
 
 
-wire [KEY_WIDTH-1:0] correct_dim_matrix [NUMBER_OF_TABLES-1:0][HASH_TABLE_MAX_SIZE-1:0];
-
 wire [DATA_WIDTH-1:0]   data_in_delayed;
 wire [1:0]              delete_write_read_i_valid;
 wire [1:0]              delete_write_read_i_delayed;
@@ -42,7 +42,15 @@ controller big_ass_controller (
 
 
 //delaying signals to the right time
-
+siso_register #(
+    .DATA_WIDTH(1),
+    .DELAY(2))
+last_delay(
+    .clk(clk),
+    .reset(reset),
+    .write_en(ready_i),
+    .data_i(last_i),
+    .data_o(last_o));
 
 
 
