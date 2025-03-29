@@ -13,8 +13,10 @@ module hash_table #(parameter KEY_WIDTH = 2,
     input   logic [1:0] delete_write_read_i,
     input   logic ready_i,
     input   logic valid_i,
+    input   logic last_i,
     output  wire ready_o,
     output  wire valid_o,
+    output  wire last_o,
     output  wire [DATA_WIDTH-1:0] read_data_o,
     output  wire no_deletion_target_o,
     output  wire no_write_space_o,
@@ -519,6 +521,16 @@ flag_delay(
 assign flags_0_packed = { << {flags_0}};
 assign flags_0_delayed = { << { flags_0_packed_delayed}};
 assign ready_o = ready_i;
+
+siso_register #(
+    .DATA_WIDTH(1),
+    .DELAY(2))
+last_delay(
+    .clk(clk),
+    .reset(reset),
+    .write_en(ready_i),
+    .data_i(last_i),
+    .data_o(last_o));
 
 
 assign delete_write_read_i_valid = valid_i == 1'b1 ? delete_write_read_i : 2'b00; //nothing operation

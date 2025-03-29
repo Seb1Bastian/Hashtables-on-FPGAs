@@ -5,9 +5,11 @@ module hash_table #(parameter DATA_WIDTH = 32)(
     input   logic ready_i,
     input   logic valid_i,
     input   logic last_i,
+    input   logic [7:0] keep_i,
     output  wire ready_o,
     output  wire valid_o,
     output  wire last_o,
+    output  wire [7:0] keep_o,
     output  wire [DATA_WIDTH-1:0] read_data_o
 );
 /*localparam integer HASH_TABLE_SIZE[NUMBER_OF_TABLES-1:0] = '{32'd1,32'd1,32'd1,32'd1};
@@ -53,6 +55,15 @@ last_delay(
     .data_o(last_o));
 
 
+siso_register #(
+    .DATA_WIDTH(8),
+    .DELAY(2))
+keep_delay(
+    .clk(clk),
+    .reset(reset),
+    .write_en(ready_i),
+    .data_i(keep_i),
+    .data_o(keep_o));
 
 siso_register #(
     .DATA_WIDTH(DATA_WIDTH-2),
@@ -79,7 +90,7 @@ op_delay(
 
 
 assign ready_o = ready_i;
-assign delete_write_read_i_valid = valid_i == 1'b1 ? data_in[DATA_WIDTH-1-:1] : 2'b00; //nothing operation
+assign delete_write_read_i_valid = valid_i == 1'b1 ? data_in[DATA_WIDTH-1-:2] : 2'b00; //nothing operation
 
 
 endmodule

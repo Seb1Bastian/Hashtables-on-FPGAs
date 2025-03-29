@@ -12,8 +12,10 @@ module axi_wrapper #(parameter KEY_WIDTH = 5,
     input [2+DATA_WIDTH+KEY_WIDTH-1:0] data_i,
     input ready_i,
     input valid_i,
+    input last_i,
     output ready_o,
     output valid_o,
+    output last_o,
     output [2+DATA_WIDTH+KEY_WIDTH-1:0] data_o );
     
 wire [63:0] inbetween_data;
