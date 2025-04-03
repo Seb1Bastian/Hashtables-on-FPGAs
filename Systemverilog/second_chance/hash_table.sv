@@ -1,5 +1,6 @@
 module hash_table #(parameter KEY_WIDTH = 2,
                     parameter DATA_WIDTH = 32,
+                    parameter KEEP_WIDTH = $ceil(KEY_WIDTH+DATA_WIDTH),
                     parameter NUMBER_OF_TABLES = 5,
                     parameter HASH_TABLE_MAX_SIZE = 5,
                     parameter [32*NUMBER_OF_TABLES-1:0] HASH_TABLE_SIZES = {32'd5,32'd5,32'd5,32'd5},
@@ -456,6 +457,7 @@ op_delay(
     .write_en(ready_i),
     .data_i(delete_write_read_i_valid),
     .data_o(delete_write_read_i_delayed));
+assign delete_write_read_i_valid = valid_i == 1'b1 ? delete_write_read_i : 2'b00;
 
 siso_register #(
     .DATA_WIDTH((KEY_WIDTH+DATA_WIDTH)*BUCKET_SIZE*NUMBER_OF_TABLES),
@@ -533,7 +535,15 @@ last_delay(
     .data_o(last_o));
 
 
-assign delete_write_read_i_valid = valid_i == 1'b1 ? delete_write_read_i : 2'b00; //nothing operation
+siso_register #(
+    .DATA_WIDTH(8),
+    .DELAY(2))
+keep_delay(
+    .clk(clk),
+    .reset(reset),
+    .write_en(ready_i),
+    .data_i(keep_i),
+    .data_o(keep_o));
 
 
 endmodule
