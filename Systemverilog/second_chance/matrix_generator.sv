@@ -104,10 +104,17 @@ localparam [KEY_WIDTH-1:0] Q_MATRIX[NUMBER_OF_TABLES-1:0][HASH_TABLE_SIZE[0]-1:0
                                                                                         32'b00000000000000000000000000000100,
                                                                                         32'b00000000000000000000000000000010,
                                                                                         32'b00000000000000000000000000000001}};
+genvar i,j,l;
+generate
+    for (i = 0; i < NUMBER_OF_TABLES; i++) begin
+        for (j = 0; j < HASH_ADR_WIDTH; j++) begin
+            for (l = 0; l < KEY_WIDTH; l++) begin
+                assign logic_matrix[i][j][l] = Q_MATRIX[i][j][l];
+            end
+        end
+    end
+endgenerate
 
-assign logic_matrix = Q_MATRIX;
-
-genvar i,j;
 generate
     for (i = 0; i < NUMBER_OF_TABLES; i++) begin
         for (j = 0; j < HASH_ADR_WIDTH; j++) begin
