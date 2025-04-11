@@ -21,7 +21,7 @@ module axi_wrapper #(parameter KEY_WIDTH = 5,
     output [KEEP_WIDTH-1:0] keep_o,
     output [2+DATA_WIDTH+KEY_WIDTH-1:0] data_o );
     
-wire [63:0] inbetween_data;
+wire [KEY_WIDTH+DATA_WIDTH+1:0] inbetween_data;
 
 
 hash_table #( .KEY_WIDTH(KEY_WIDTH),
@@ -48,11 +48,11 @@ the_table (
     .last_o(last_o),
     .keep_o(keep_o),
     .read_data_o(inbetween_data[DATA_WIDTH-1:0]),
-    .no_deletion_target_o(inbetween_data[60]),
-    .no_write_space_o(inbetween_data[61]),
-    .no_element_found_o(inbetween_data[62]),
-    .key_already_present_o(inbetween_data[63]));
+    .no_deletion_target_o(inbetween_data[KEY_WIDTH+DATA_WIDTH-2]),
+    .no_write_space_o(inbetween_data[KEY_WIDTH+DATA_WIDTH-1]),
+    .no_element_found_o(inbetween_data[KEY_WIDTH+DATA_WIDTH]),
+    .key_already_present_o(inbetween_data[KEY_WIDTH+DATA_WIDTH+1]));
     
-assign inbetween_data[59 -: (60-DATA_WIDTH)] = {(60-DATA_WIDTH){1'b0}};
+assign inbetween_data[DATA_WIDTH+KEY_WIDTH-3: DATA_WIDTH] = {(KEY_WIDTH-2){1'b0}};
 assign data_o = inbetween_data;
 endmodule

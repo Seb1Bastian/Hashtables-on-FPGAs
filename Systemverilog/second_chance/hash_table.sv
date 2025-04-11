@@ -538,7 +538,7 @@ last_delay(
 
 
 siso_register #(
-    .DATA_WIDTH(8),
+    .DATA_WIDTH(KEEP_WIDTH),
     .DELAY(2))
 keep_delay(
     .clk(clk),
