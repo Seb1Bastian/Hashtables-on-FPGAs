@@ -1,34 +1,17 @@
 module h3_hash_function #(parameter KEY_WIDTH = 32,
-                         parameter HASH_ADR_WIDTH   = 5,
-                         parameter logic [KEY_WIDTH-1:0] Q_MATRIX [HASH_ADR_WIDTH-1:0]  = '{5'd1,5'd1,5'd1,5'd1,5'd1})(
-    input   logic [KEY_WIDTH-1:0]                   key_in,
-    output  wire [HASH_ADR_WIDTH-1:0]    hash_adr_out
+                         parameter HASH_ADR_WIDTH   = 5)(
+    input   logic [KEY_WIDTH-1:0]       key_in,
+    input   logic [KEY_WIDTH-1:0]       matrix_i [HASH_ADR_WIDTH-1:0],
+    output  wire  [HASH_ADR_WIDTH-1:0]  hash_adr_out
 ); 
 
 wire[KEY_WIDTH-1:0] and_matrix[HASH_ADR_WIDTH-1:0];
-wire[KEY_WIDTH-1:0] org_matrix[HASH_ADR_WIDTH-1:0];
 
 genvar i,j;
-/*generate
-    for (i = 0; i < KEY_WIDTH; i = i + 1) begin
-        for (j = 0; j < HASH_ADR_WIDTH; j = j + 1) begin
-            assign org_matrix[i][j] = Q_MATRIX[(HASH_ADR_WIDTH*i)+j];
-        end        
-    end
-endgenerate*/
-
-generate
-    for (i = 0; i < HASH_ADR_WIDTH; i = i + 1) begin
-        for (j = 0; j < KEY_WIDTH; j = j + 1) begin
-            assign org_matrix[i][j] = Q_MATRIX[i][j];
-        end
-    end
-endgenerate
-
 generate
     for (i = 0; i < KEY_WIDTH; i = i + 1) begin
         for (j = 0; j < HASH_ADR_WIDTH; j = j + 1) begin
-            assign and_matrix[j][i] = key_in[i] & org_matrix[j][i];
+            assign and_matrix[j][i] = key_in[i] & matrix_i[j][i];
         end        
     end
 endgenerate

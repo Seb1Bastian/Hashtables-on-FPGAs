@@ -6,6 +6,7 @@ module flag_register #(
 (
     input logic                     clk,
     input logic                     reset,
+    input logic                     ready_i,
     input logic [SIZE-1:0]          read_adr_0,
     input logic [SIZE-1:0]          read_adr_1,
     input logic [SIZE-1:0]          read_adr_2,

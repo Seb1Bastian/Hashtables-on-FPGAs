@@ -51,8 +51,10 @@ wire [NUMBER_OF_TABLES-1:0][BUCKET_SIZE-1:0]    same_key;
 wire [NUMBER_OF_TABLES-1:0]                     delete;
 wire [NUMBER_OF_TABLES-1:0]                     write;
 wire [NUMBER_OF_TABLES-1:0]                     write_og;
-wire [BUCKET_SIZE-1:0]                          write_specific  [NUMBER_OF_TABLES-1:0];
-wire [BUCKET_SIZE-1:0]                          delete_specific [NUMBER_OF_TABLES-1:0];
+wire [BUCKET_SIZE-1:0]                          write_specific      [NUMBER_OF_TABLES-1:0];
+wire [BUCKET_SIZE-1:0]                          delete_specific     [NUMBER_OF_TABLES-1:0];
+wire [BUCKET_SIZE-1:0]                          correct_write_flags [NUMBER_OF_TABLES-1:0];
+wire [BUCKET_SIZE-1:0]                          correct_delete_flags [NUMBER_OF_TABLES-1:0];
 wire [NUMBER_OF_TABLES-1:0]                     unary_valid;
 wire                                            unary_or_same_key;
 wire                                            no_write;
@@ -88,19 +90,29 @@ generate
         end
         for (j = 0; j < BUCKET_SIZE ; j++ ) begin
             if (i == 0) begin
-                assign write_specific[0][j] = (!valid_flags_0_i[0][j]) ? 1'b1 : 1'b0;
-                assign delete_specific[0][j] = same_key[0][j];
+                if (j == 0) begin
+                    assign write_specific[0][j] = (!valid_flags_0_i[0][j]) ? 1'b1 : 1'b0;
+                end else begin
+                    assign write_specific[0][j] = ((!valid_flags_0_i[0][j]) && (~|write_specific[0][j-1:0]))? 1'b1 : 1'b0;
+                end
             end else begin
-                assign write_specific[i][j] = ((!valid_flags_0_i[i][j]) && (~|write_og[i-1:0])) ? 1'b1 : 1'b0;
-                assign delete_specific[i][j] = same_key[i][j];
+                if (j == 0) begin
+                    assign write_specific[i][j] = ((!valid_flags_0_i[i][j]) && (~|write_og[i-1:0])) ? 1'b1 : 1'b0;
+                end else begin
+                    assign write_specific[i][j] = ((!valid_flags_0_i[i][j]) && (~|write_og[i-1:0]) && (~|write_specific[0][j-1:0])) ? 1'b1 : 1'b0;
+                end
             end
+            assign delete_specific[i][j] = same_key[i][j];
+            assign correct_write_flags[i][j] = write_specific[i][j] | valid_flags_0_i[i][j];
+            assign correct_delete_flags[i][j] = (~delete_specific[i][j]) &  valid_flags_0_i[i][j];
         end       
         assign write[i] = (write_og[i]) & delete_write_read_i == WRITE_OPERATION && (~unary_or_same_key);
         assign delete[i] = (|delete_specific[i] && delete_write_read_i == DELTE_OPERATION) ? 1'b1 : 1'b0;
         assign write_en_o[i] = (write[i] || delete[i]) ? 1'b1 : 1'b0;
-        assign write_valid_flag_o[i] = write_specific[i];
     end
 endgenerate
+assign write_valid_flag_o = (delete_write_read_i == WRITE_OPERATION) ? correct_write_flags : correct_delete_flags; //because only the write and delte can change the valid flag we must only check for one
+
 
 // insert the correct data into the vectors that get send back to the memory to be saved
 generate
