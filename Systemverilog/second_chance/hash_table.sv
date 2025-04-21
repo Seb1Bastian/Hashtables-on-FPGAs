@@ -144,7 +144,7 @@ generate
     for (i = 0; i < NUMBER_OF_TABLES ; i = i + 1 ) begin
         for (j = 0; j < BUCKET_SIZE; j = j + 1) begin
             simple_dual_one_clock 
-                #(.MEM_SIZE(HASH_TABLE_SIZE[j]),
+                #(.MEM_SIZE(HASH_TABLE_SIZE[i]),
                 .DATA_WIDTH(KEY_WIDTH+DATA_WIDTH)
             )
             block_ram(
@@ -152,8 +152,8 @@ generate
                 .ena(1'b1),     //probably needs not to be changed
                 .enb(1'b1),     //probably needs not to be changed
                 .wea((write_en[i][j] && ready_i)),
-                .addra(hash_adr_write[i][HASH_TABLE_SIZE[j]-1:0]),
-                .addrb(hash_adrs_out[i][HASH_TABLE_SIZE[j]-1:0]),
+                .addra(hash_adr_write[i][HASH_TABLE_SIZE[i]-1:0]),
+                .addrb(hash_adrs_out[i][HASH_TABLE_SIZE[i]-1:0]),
                 .dia({write_keys[i], write_data[i]}),
                 .dob(data_out_of_block_ram[i][j])
             );
